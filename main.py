@@ -322,8 +322,18 @@ def back_handler(message):
 
 @bot.message_handler(commands=['site', 'website'])
 def site(message):
-    webbrowser.open_new('https://contract.gosuslugi.ru/')
-    bot.send_message(message.chat.id, "🌐 Открываю сайт...")
+    markup = types.InlineKeyboardMarkup()
+    btn = types.InlineKeyboardButton(
+        text="🔗 Click to continue",
+        url="https://contract.gosuslugi.ru/"
+    )
+    markup.add(btn)
+    
+    bot.send_message(
+        message.chat.id,
+        "🌐 Click the button below to visit the website:",
+        reply_markup=markup
+    )
 
 # ===== 4. ИНЛАЙН-РЕЖИМ (ДОПОЛНИТЕЛЬНАЯ ФУНКЦИЯ) =====
 @bot.inline_handler(func=lambda query: True)
@@ -407,4 +417,5 @@ if __name__ == '__main__':
     print("💱 Инлайн режим: @chistakovbot 100 USD to RUB")
     print("=" * 50)
     bot.polling(none_stop=True)
+
 
