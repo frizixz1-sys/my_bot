@@ -320,6 +320,10 @@ def back_handler(message):
     bot.send_message(message.chat.id, "⚡️ Back to the beginning...")
     start_command(message)
 
+@bot.message_handler(commands=['site', 'website'])
+def site(message):
+    webbrowser.open_new('https://contract.gosuslugi.ru/')
+    bot.send_message(message.chat.id, "🌐 Открываю сайт...")
 
 # ===== 4. ИНЛАЙН-РЕЖИМ (ДОПОЛНИТЕЛЬНАЯ ФУНКЦИЯ) =====
 @bot.inline_handler(func=lambda query: True)
@@ -403,3 +407,4 @@ if __name__ == '__main__':
     print("💱 Инлайн режим: @chistakovbot 100 USD to RUB")
     print("=" * 50)
     bot.polling(none_stop=True)
+
