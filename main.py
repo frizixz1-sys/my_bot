@@ -1,48 +1,49 @@
 import telebot
-import webbrowser
 import requests
 import os
 import threading
 import time
+import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telebot import types
 
-# ===== НАСТРОЙКИ =====
+# ===== CONFIGURATION =====
 BOT_TOKEN = '8333223188:AAEBPgTSCYA8odgfCfoJEpx7xeSBV-X4uN4'
 API_KEY = '14a528b05de9f38b88ae0fe1'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
-# ===== 1. HTTP СЕРВЕР ДЛЯ RENDER =====
+# ===== HTTP SERVER FOR RENDER =====
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
         self.wfile.write(b'Bot is running on Render')
-
+    
     def log_message(self, format, *args):
         pass
-
 
 def run_http_server():
     try:
         port = int(os.environ.get('PORT', 10000))
-        print(f"🌐 HTTP сервер на порту {port}")
+        print(f"🌐 HTTP server on port {port}")
         server = HTTPServer(('0.0.0.0', port), HealthHandler)
+        print(f"✅ HTTP server started successfully")
         server.serve_forever()
     except Exception as e:
-        print(f"❌ Ошибка HTTP сервера: {e}")
+        print(f"❌ HTTP server error: {e}")
         time.sleep(5)
         run_http_server()
 
-
+# Start HTTP server in background thread
 http_thread = threading.Thread(target=run_http_server, daemon=True)
 http_thread.start()
+time.sleep(2)  # Give server time to start
 
 
-# ===== 2. ТВОЙ ОСНОВНОЙ ФУНКЦИОНАЛ (ВЕСЬ, КАК БЫЛО) =====
+# ===== COMMANDS =====
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
@@ -64,16 +65,15 @@ def start_command(message):
 
     bot.send_message(
         message.chat.id,
-        "The bot can rate your video messages, photos, videos, documents, stickers, and more. "
-        "It can also provide you with a price list for purchasing highly specialized databases.\n\n"
+        "I can provide you with a price list for purchasing highly specialized databases.\n\n"
         "Commands:\n"
         "/start - restart\n"
         "/help - help\n"
-        "/site - view a secret website\n"
-        "/database - databases available\n"
+        "/site - visit website\n"
+        "/database - available databases\n"
         "/contacts - my contacts\n"
         "/exchange - currency converter\n\n"
-        "CEO - chistakovv.t.me",
+        "CEO - @chistakovv",
         reply_markup=hide_markup
     )
 
@@ -85,18 +85,29 @@ def help_command(message):
             bot.send_photo(
                 message.chat.id,
                 photo,
-                caption="Is there an error in the bot? Contact me on Telegram chistakovv.t.me"
+                caption="Is there an error? Contact me on Telegram @chistakovv"
             )
     except FileNotFoundError:
         bot.send_message(
             message.chat.id,
-            'Is there an error in the bot? Contact me on Telegram chistakovv.t.me'
+            'Is there an error? Contact me on Telegram @chistakovv'
         )
 
 
 @bot.message_handler(commands=['site', 'website'])
 def site(message):
-    webbrowser.open_new('https://contract.gosuslugi.ru/')
+    markup = types.InlineKeyboardMarkup()
+    btn = types.InlineKeyboardButton(
+        text="🔗 Click to continue",
+        url="https://contract.gosuslugi.ru/"
+    )
+    markup.add(btn)
+    
+    bot.send_message(
+        message.chat.id,
+        "🌐 Click the button below to visit the website:",
+        reply_markup=markup
+    )
 
 
 @bot.message_handler(commands=['database'])
@@ -157,12 +168,14 @@ def exchange(message):
             bot.send_photo(
                 message.chat.id,
                 photo,
-                caption="Warm greetings, enter the amount"
+                caption="Welcome to Currency Converter!\n\nEnter the amount:"
             )
     except FileNotFoundError:
-        bot.send_message(message.chat.id, "Warm greetings. To get started, enter the amount")
+        bot.send_message(message.chat.id, "Welcome to Currency Converter!\n\nEnter the amount:")
     bot.register_next_step_handler(message, summa)
 
+
+amount = 0
 
 def summa(message):
     global amount
@@ -233,7 +246,7 @@ def process_other_currency(message):
         bot.register_next_step_handler(message, process_other_currency)
 
 
-# ===== 3. ОБРАБОТЧИКИ КНОПОК =====
+# ===== BUTTON HANDLERS =====
 
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
@@ -320,27 +333,13 @@ def back_handler(message):
     bot.send_message(message.chat.id, "⚡️ Back to the beginning...")
     start_command(message)
 
-@bot.message_handler(commands=['site', 'website'])
-def site(message):
-    markup = types.InlineKeyboardMarkup()
-    btn = types.InlineKeyboardButton(
-        text="🔗 Click to continue",
-        url="https://contract.gosuslugi.ru/"
-    )
-    markup.add(btn)
-    
-    bot.send_message(
-        message.chat.id,
-        "🌐 Click the button below to visit the website:",
-        reply_markup=markup
-    )
 
-# ===== 4. ИНЛАЙН-РЕЖИМ (ДОПОЛНИТЕЛЬНАЯ ФУНКЦИЯ) =====
+# ===== INLINE MODE (EXTRA FEATURE) =====
 @bot.inline_handler(func=lambda query: True)
 def inline_query(query):
     try:
         text = query.query.strip().upper()
-        print(f"📩 Инлайн запрос: {text}")
+        print(f"📩 Inline request: {text}")
 
         if not text:
             r = types.InlineQueryResultArticle(
@@ -363,7 +362,7 @@ def inline_query(query):
             url = f"https://v6.exchangerate-api.com/v6/{API_KEY}/latest/{from_curr}"
             response = requests.get(url, timeout=5)
             data = response.json()
-
+            
             if data['result'] == 'success' and to_curr in data['conversion_rates']:
                 rate = data['conversion_rates'][to_curr]
                 result = amount * rate
@@ -387,15 +386,15 @@ def inline_query(query):
             )
             bot.answer_inline_query(query.id, [r])
     except Exception as e:
-        print(f"❌ Инлайн ошибка: {e}")
+        print(f"❌ Inline error: {e}")
 
 
-# ===== 5. ОБРАБОТЧИК КОНТЕНТА =====
-@bot.message_handler(content_types=['photo', 'sticker', 'video', 'document', 'audio', 'voice'])
-def get_photo(message):
+# ===== CONTENT HANDLERS =====
+@bot.message_handler(content_types=['photo', 'video', 'document', 'audio', 'voice'])
+def get_file(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton(
-        'sent to the site',
+        'Sent to the site',
         url='https://www.interpol.int/How-we-work/Notices/Red-Notices/View-Red-Notices'
     ))
     bot.reply_to(message, 'The file has been successfully saved to the server...', reply_markup=markup)
@@ -403,19 +402,30 @@ def get_photo(message):
 
 @bot.message_handler(content_types=['text'])
 def info(message):
-    if message.text.lower() == 'привет':
-        bot.send_message(message.chat.id, f'Приветствую, {message.from_user.first_name}')
+    if message.text.lower() == 'hello':
+        bot.send_message(message.chat.id, f'Hello, {message.from_user.first_name}!')
     elif message.text.lower() == 'id':
-        bot.send_message(message.chat.id, f'ID: {message.from_user.id}')
+        bot.send_message(message.chat.id, f'Your ID: {message.from_user.id}')
+    elif message.text == 'VK':
+        bot.send_message(message.chat.id, 'https://vk.com/outnrss')
+    elif message.text == 'Почта':
+        bot.send_message(message.chat.id, 'outnrss@vk.com')
 
 
-# ===== ЗАПУСК =====
+# ===== START =====
 if __name__ == '__main__':
     print("=" * 50)
-    print("✅ Бот с ПОЛНЫМ функционалом запущен...")
-    print("📱 Основные команды: /start, /help, /database, /contacts, /exchange")
-    print("💱 Инлайн режим: @chistakovbot 100 USD to RUB")
+    print("✅ Bot with FULL functionality started...")
+    print("📱 Commands: /start, /help, /database, /contacts, /exchange, /site")
+    print("💱 Inline mode: @chistakovbot 100 USD to RUB")
     print("=" * 50)
-    bot.polling(none_stop=True)
-
-
+    
+    # Remove webhook just in case
+    try:
+        requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook")
+        print("✅ Webhook removed")
+    except:
+        pass
+    
+    # Start bot
+    bot.polling(none_stop=True, interval=0, timeout=20)
