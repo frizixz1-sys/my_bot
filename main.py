@@ -1,8 +1,6 @@
 import telebot
 import requests
 import os
-import threading
-import time
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telebot import types
@@ -13,54 +11,51 @@ API_KEY = '14a528b05de9f38b88ae0fe1'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-
-# ===== HTTP SERVER FOR RENDER =====
-class HealthHandler(BaseHTTPRequestHandler):
+# ===== WEBHOOK HANDLER =====
+class WebhookHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            update = telebot.types.Update.de_json(post_data.decode('utf-8'))
+            
+            # Отправляем обновление боту
+            bot.process_new_updates([update])
+            
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'OK')
+        except Exception as e:
+            print(f"❌ Webhook error: {e}")
+            self.send_response(500)
+            self.end_headers()
+    
     def do_GET(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write(b'Bot is running on Render')
-    
-    def log_message(self, format, *args):
-        pass
+        self.wfile.write(b'Bot is running with webhook')
 
-def run_http_server():
-    try:
-        port = int(os.environ.get('PORT', 10000))
-        print(f"🌐 HTTP server on port {port}")
-        server = HTTPServer(('0.0.0.0', port), HealthHandler)
-        print(f"✅ HTTP server started successfully")
-        server.serve_forever()
-    except Exception as e:
-        print(f"❌ HTTP server error: {e}")
-        time.sleep(5)
-        run_http_server()
-
-# Start HTTP server in background thread
-http_thread = threading.Thread(target=run_http_server, daemon=True)
-http_thread.start()
-time.sleep(2)  # Give server time to start
+def run_webhook_server():
+    port = int(os.environ.get('PORT', 10000))
+    server = HTTPServer(('0.0.0.0', port), WebhookHandler)
+    print(f"🌐 Webhook server on port {port}")
+    server.serve_forever()
 
 
 # ===== COMMANDS =====
-
 @bot.message_handler(commands=['start'])
 def start_command(message):
-    hide_markup = types.ReplyKeyboardRemove()
     try:
         with open("baba.jpg", "rb") as photo:
             bot.send_photo(
                 message.chat.id,
                 photo,
-                caption=f"It is a pleasure to meet you, {message.from_user.first_name}",
-                reply_markup=hide_markup
+                caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
     except FileNotFoundError:
         bot.send_message(
             message.chat.id,
-            f"It is a pleasure to meet you, {message.from_user.first_name}",
-            reply_markup=hide_markup
+            f"It is a pleasure to meet you, {message.from_user.first_name}"
         )
 
     bot.send_message(
@@ -73,8 +68,7 @@ def start_command(message):
         "/database - available databases\n"
         "/contacts - my contacts\n"
         "/exchange - currency converter\n\n"
-        "CEO - @chistakovv",
-        reply_markup=hide_markup
+        "CEO - @chistakovv"
     )
 
 
@@ -139,9 +133,6 @@ def database_command(message):
 
 @bot.message_handler(commands=['contacts'])
 def contacts_command(message):
-    hide_markup = types.ReplyKeyboardRemove()
-    bot.send_message(message.chat.id, "⚡️ Opening contacts...", reply_markup=hide_markup)
-
     inline_markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Telegram', url='https://t.me/chistakovv')
     inline_markup.row(btn1)
@@ -247,7 +238,6 @@ def process_other_currency(message):
 
 
 # ===== BUTTON HANDLERS =====
-
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
     databases_text = """🇷🇺 Russia
@@ -334,7 +324,7 @@ def back_handler(message):
     start_command(message)
 
 
-# ===== INLINE MODE (EXTRA FEATURE) =====
+# ===== INLINE MODE =====
 @bot.inline_handler(func=lambda query: True)
 def inline_query(query):
     try:
@@ -406,26 +396,39 @@ def info(message):
         bot.send_message(message.chat.id, f'Hello, {message.from_user.first_name}!')
     elif message.text.lower() == 'id':
         bot.send_message(message.chat.id, f'Your ID: {message.from_user.id}')
-    elif message.text == 'VK':
-        bot.send_message(message.chat.id, 'https://vk.com/outnrss')
-    elif message.text == 'Почта':
-        bot.send_message(message.chat.id, 'outnrss@vk.com')
 
 
 # ===== START =====
 if __name__ == '__main__':
+    import threading
+    import time
+    
     print("=" * 50)
-    print("✅ Bot with FULL functionality started...")
-    print("📱 Commands: /start, /help, /database, /contacts, /exchange, /site")
-    print("💱 Inline mode: @chistakovbot 100 USD to RUB")
+    print("✅ Starting bot with webhook...")
+    
+    # Запускаем веб-сервер в отдельном потоке
+    server_thread = threading.Thread(target=run_webhook_server, daemon=True)
+    server_thread.start()
+    time.sleep(2)
+    
+    # Получаем URL сервиса
+    render_url = os.environ.get('RENDER_EXTERNAL_URL')
+    if not render_url:
+        # Если не на Render, используем локальный URL для теста
+        render_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'localhost')}.onrender.com"
+    
+    webhook_url = f"{render_url}/webhook"
+    print(f"🔗 Setting webhook to: {webhook_url}")
+    
+    # Устанавливаем вебхук
+    bot.remove_webhook()
+    time.sleep(1)
+    bot.set_webhook(url=webhook_url)
+    
+    print(f"✅ Webhook set successfully")
+    print(f"📱 Bot is running with webhook")
     print("=" * 50)
     
-    # Remove webhook just in case
-    try:
-        requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook")
-        print("✅ Webhook removed")
-    except:
-        pass
-    
-    # Start bot
-    bot.polling(none_stop=True, interval=0, timeout=20)
+    # Держим главный поток активным
+    while True:
+        time.sleep(60)
