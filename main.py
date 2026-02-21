@@ -57,50 +57,89 @@ def delete_previous_message(chat_id):
             pass  # Если сообщение уже удалено или слишком старое
 @bot.message_handler(commands=['start'])
 def start_command(message):
+    chat_id = message.chat.id
+    
     # Удаляем сообщение пользователя
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
     
-    # Удаляем предыдущие сообщения бота для этого пользователя
-    chat_id = message.chat.id
-    if chat_id in last_bot_messages:
+    # Если это первый запуск или нет сохраненного первого сообщения
+    if chat_id not in first_message_ids:
+        # Отправляем фото
         try:
-            bot.delete_message(chat_id, last_bot_messages[chat_id])
-        except:
-            pass
-    
-    # Отправляем фото
-    try:
-        with open("baba.jpg", "rb") as photo:
-            sent_photo = bot.send_photo(
-                message.chat.id,
-                photo,
-                caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
+            with open("baba.jpg", "rb") as photo:
+                sent_photo = bot.send_photo(
+                    chat_id,
+                    photo,
+                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
+                )
+                # Сохраняем ID первого сообщения
+                first_message_ids[chat_id] = sent_photo.message_id
+                last_bot_messages[chat_id] = sent_photo.message_id
+        except FileNotFoundError:
+            sent_text = bot.send_message(
+                chat_id,
+                f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
-            last_bot_messages[chat_id] = sent_photo.message_id
-    except FileNotFoundError:
-        sent_text = bot.send_message(
-            message.chat.id,
-            f"It is a pleasure to meet you, {message.from_user.first_name}"
-        )
-        last_bot_messages[chat_id] = sent_text.message_id
+            first_message_ids[chat_id] = sent_text.message_id
+            last_bot_messages[chat_id] = sent_text.message_id
 
-    # Отправляем список команд
-    sent_commands = bot.send_message(
-        message.chat.id,
-        "I can provide you with a price list for purchasing highly specialized databases.\n\n"
-        "Commands:\n"
-        "/start - restart\n"
-        "/help - help\n"
-        "/site - visit website\n"
-        "/database - available databases\n"
-        "/contacts - my contacts\n"
-        "/exchange - currency converter\n\n"
-        "CEO - @chistakovv"
-    )
-    last_bot_messages[chat_id] = sent_commands.message_id
+        # Отправляем список команд
+        sent_commands = bot.send_message(
+            chat_id,
+            "I can provide you with a price list for purchasing highly specialized databases.\n\n"
+            "Commands:\n"
+            "/start - restart\n"
+            "/help - help\n"
+            "/site - visit website\n"
+            "/database - available databases\n"
+            "/contacts - my contacts\n"
+            "/exchange - currency converter\n\n"
+            "CEO - @chistakovv"
+        )
+        last_bot_messages[chat_id] = sent_commands.message_id
+    else:
+        # Если это не первый запуск, просто отправляем новые сообщения
+        # Удаляем предыдущее сообщение бота (кроме первого)
+        if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
+            try:
+                bot.delete_message(chat_id, last_bot_messages[chat_id])
+            except:
+                pass
+        
+        # Отправляем фото
+        try:
+            with open("baba.jpg", "rb") as photo:
+                sent_photo = bot.send_photo(
+                    chat_id,
+                    photo,
+                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
+                )
+                last_bot_messages[chat_id] = sent_photo.message_id
+        except FileNotFoundError:
+            sent_text = bot.send_message(
+                chat_id,
+                f"It is a pleasure to meet you, {message.from_user.first_name}"
+            )
+            last_bot_messages[chat_id] = sent_text.message_id
+
+        # Отправляем список команд
+        sent_commands = bot.send_message(
+            chat_id,
+            "I can provide you with a price list for purchasing highly specialized databases.\n\n"
+            "Commands:\n"
+            "/start - restart\n"
+            "/help - help\n"
+            "/site - visit website\n"
+            "/database - available databases\n"
+            "/contacts - my contacts\n"
+            "/exchange - currency converter\n\n"
+            "CEO - @chistakovv"
+        )
+        last_bot_messages[chat_id] = sent_commands.message_id
+
 
 
 @bot.message_handler(commands=['help'])
@@ -113,8 +152,8 @@ def help_command(message):
     except:
         pass
     
-    # Удаляем предыдущее сообщение бота
-    if chat_id in last_bot_messages:
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
         try:
             bot.delete_message(chat_id, last_bot_messages[chat_id])
         except:
@@ -145,7 +184,8 @@ def site(message):
     except:
         pass
     
-    if chat_id in last_bot_messages:
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
         try:
             bot.delete_message(chat_id, last_bot_messages[chat_id])
         except:
@@ -174,7 +214,8 @@ def database_command(message):
     except:
         pass
     
-    if chat_id in last_bot_messages:
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
         try:
             bot.delete_message(chat_id, last_bot_messages[chat_id])
         except:
@@ -215,7 +256,8 @@ def contacts_command(message):
     except:
         pass
     
-    if chat_id in last_bot_messages:
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
         try:
             bot.delete_message(chat_id, last_bot_messages[chat_id])
         except:
@@ -240,7 +282,6 @@ def contacts_command(message):
     except FileNotFoundError:
         sent = bot.send_message(chat_id, "My contacts:", reply_markup=inline_markup)
         last_bot_messages[chat_id] = sent.message_id
-
 @bot.message_handler(commands=['exchange'])
 def exchange(message):
     chat_id = message.chat.id
@@ -250,7 +291,8 @@ def exchange(message):
     except:
         pass
     
-    if chat_id in last_bot_messages:
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
         try:
             bot.delete_message(chat_id, last_bot_messages[chat_id])
         except:
@@ -269,7 +311,7 @@ def exchange(message):
         last_bot_messages[chat_id] = sent.message_id
     bot.register_next_step_handler(message, summa)
 
-bot.message_handler(func=lambda message: message.text == 'Availability')
+@bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
     chat_id = message.chat.id
     
@@ -278,7 +320,8 @@ def show_databases(message):
     except:
         pass
     
-    if chat_id in last_bot_messages:
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
         try:
             bot.delete_message(chat_id, last_bot_messages[chat_id])
         except:
@@ -355,11 +398,12 @@ def show_databases(message):
 • SG [2006-2015]
 • ABW [2014-2017]"""
 
-    bot.send_message(
-        message.chat.id,
+    sent_list = bot.send_message(
+        chat_id,
         databases_text,
         parse_mode='HTML'
     )
+    last_bot_messages[chat_id] = sent_list.message_id
 
 @bot.message_handler(func=lambda message: message.text == 'Buy')
 def buy_handler(message):
@@ -392,17 +436,27 @@ def buy_handler(message):
 
 @bot.message_handler(func=lambda message: message.text == 'Back')
 def back_handler(message):
+    chat_id = message.chat.id
+    
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
     
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
+    
     hide_markup = types.ReplyKeyboardRemove()
-    bot.send_message(
-        message.chat.id,
+    sent = bot.send_message(
+        chat_id,
         "⚡️ Back to the beginning...",
         reply_markup=hide_markup
     )
+    last_bot_messages[chat_id] = sent.message_id
     start_command(message)
     
 @bot.inline_handler(func=lambda query: True)
@@ -458,6 +512,46 @@ def inline_query(query):
     except Exception as e:
         print(f"❌ Inline error: {e}")
 
+@bot.message_handler(func=lambda message: message.text == 'Buy')
+def buy_handler(message):
+    chat_id = message.chat.id
+    
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except:
+        pass
+    
+    # Удаляем предыдущее сообщение бота (кроме первого)
+    if chat_id in last_bot_messages and last_bot_messages[chat_id] != first_message_ids.get(chat_id):
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
+    
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn1 = types.KeyboardButton('Availability')
+    btn2 = types.KeyboardButton('Buy')
+    btn3 = types.KeyboardButton('Back')
+    markup.add(btn1, btn2)
+    markup.add(btn3)
+
+    try:
+        with open("Админ.jpg", "rb") as photo:
+            sent = bot.send_photo(
+                chat_id,
+                photo,
+                caption=f"Contact before purchasing - @Chistakovv, {message.from_user.first_name}",
+                reply_markup=markup
+            )
+            last_bot_messages[chat_id] = sent.message_id
+    except FileNotFoundError:
+        sent = bot.send_message(
+            chat_id,
+            f"Contact before purchasing - @Chistakovv, {message.from_user.first_name}",
+            reply_markup=markup
+        )
+        last_bot_messages[chat_id] = sent.message_id
+        
 
 # ===== CONTENT HANDLERS =====
 @bot.message_handler(content_types=['photo', 'video', 'document', 'audio', 'voice'])
@@ -512,6 +606,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
