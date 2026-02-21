@@ -296,9 +296,18 @@ def show_databases(message):
 
 try:
     with open("data.jpg", "rb") as photo:
-        bot.send_photo(message.chat.id, photo, caption=databases_text, parse_mode='HTML')
+        bot.send_photo(
+            message.chat.id, 
+            photo, 
+            caption=databases_text,
+            parse_mode='HTML' 
+        )
 except FileNotFoundError:
-    bot.send_message(message.chat.id, databases_text, parse_mode='HTML')
+    bot.send_message(
+        message.chat.id, 
+        databases_text,
+        parse_mode='HTML'  
+    )
     
 
 @bot.message_handler(func=lambda message: message.text == 'Buy')
@@ -447,5 +456,6 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
