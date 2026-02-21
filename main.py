@@ -276,6 +276,8 @@ def process_other_currency(message):
         bot.send_message(message.chat.id, f'❌ Error: {e}')
         bot.register_next_step_handler(message, process_other_currency)
         
+
+
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
     # Сначала отправляем фото с подписью
@@ -294,8 +296,8 @@ def show_databases(message):
             parse_mode='HTML'
         )
     
-    
-    databases_text = ("""<b>───── 🇷🇺 RUSSIA ─────</b>
+    # Отправляем список
+    databases_text = """<b>───── 🇷🇺 RUSSIA ─────</b>
 • FR [1995-2021]
 • ADIS [2021]
 • CCM MIA [2019-2022]
@@ -346,6 +348,8 @@ def show_databases(message):
         databases_text,
         parse_mode='HTML'
     )
+
+
     
 @bot.message_handler(func=lambda message: message.text == 'Buy')
 def buy_handler(message):
@@ -495,6 +499,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
