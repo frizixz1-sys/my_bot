@@ -11,9 +11,6 @@ API_KEY = '14a528b05de9f38b88ae0fe1'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Хранилище ID последних сообщений для каждого пользователя
-last_message_ids = {}
-
 # ===== WEBHOOK HANDLER =====
 class WebhookHandler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -45,63 +42,26 @@ def run_webhook_server():
     server.serve_forever()
 
 
-# ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ ПРЕДЫДУЩЕГО СООБЩЕНИЯ =====
-def delete_previous_message(chat_id):
-    global last_message_ids
-    if chat_id in last_message_ids:
-        try:
-            bot.delete_message(chat_id, last_message_ids[chat_id])
-        except:
-            pass  # Если сообщение уже удалено или слишком старое
-
-# ===== COMMANDS =====
 @bot.message_handler(commands=['start'])
 def start_command(message):
-    # Удаляем предыдущее сообщение бота
-    delete_previous_message(message.chat.id)
-    
-    # Проверяем, есть ли уже закрепленное сообщение
     try:
-        chat = bot.get_chat(message.chat.id)
-        if not chat.pinned_message:
-            # Если нет закрепленного сообщения, отправляем и закрепляем
-            try:
-                with open("baba.jpg", "rb") as photo:
-                    sent_message = bot.send_photo(
-                        message.chat.id,
-                        photo,
-                        caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
-                    )
-                    bot.pin_chat_message(message.chat.id, sent_message.message_id)
-                    last_message_ids[message.chat.id] = sent_message.message_id
-            except FileNotFoundError:
-                sent_message = bot.send_message(
-                    message.chat.id,
-                    f"It is a pleasure to meet you, {message.from_user.first_name}"
-                )
-                bot.pin_chat_message(message.chat.id, sent_message.message_id)
-                last_message_ids[message.chat.id] = sent_message.message_id
-    except:
-        # Если не удалось получить информацию о чате, просто отправляем без проверки
-        try:
-            with open("baba.jpg", "rb") as photo:
-                sent_message = bot.send_photo(
-                    message.chat.id,
-                    photo,
-                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
-                )
-                bot.pin_chat_message(message.chat.id, sent_message.message_id)
-                last_message_ids[message.chat.id] = sent_message.message_id
-        except FileNotFoundError:
-            sent_message = bot.send_message(
+        with open("baba.jpg", "rb") as photo:
+            sent_message = bot.send_photo(
                 message.chat.id,
-                f"It is a pleasure to meet you, {message.from_user.first_name}"
+                photo,
+                caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
+            # Закрепляем отправленное сообщение
             bot.pin_chat_message(message.chat.id, sent_message.message_id)
-            last_message_ids[message.chat.id] = sent_message.message_id
+    except FileNotFoundError:
+        sent_message = bot.send_message(
+            message.chat.id,
+            f"It is a pleasure to meet you, {message.from_user.first_name}"
+        )
+        # Закрепляем отправленное сообщение
+        bot.pin_chat_message(message.chat.id, sent_message.message_id)
 
-    # Отправляем список команд и сохраняем его ID
-    sent_message = bot.send_message(
+    bot.send_message(
         message.chat.id,
         "I can provide you with a price list for purchasing highly specialized databases.\n\n"
         "Commands:\n"
@@ -113,30 +73,26 @@ def start_command(message):
         "/exchange - currency converter\n\n"
         "CEO - @chistakovv"
     )
-    last_message_ids[message.chat.id] = sent_message.message_id
 
 
 @bot.message_handler(commands=['help'])
 def help_command(message):
-    delete_previous_message(message.chat.id)
     try:
         with open("jep.jpg", "rb") as photo:
-            sent_message = bot.send_photo(
+            bot.send_photo(
                 message.chat.id,
                 photo,
                 caption="Is there an error? Contact me on Telegram @chistakovv"
             )
     except FileNotFoundError:
-        sent_message = bot.send_message(
+        bot.send_message(
             message.chat.id,
             'Is there an error? Contact me on Telegram @chistakovv'
         )
-    last_message_ids[message.chat.id] = sent_message.message_id
 
 
 @bot.message_handler(commands=['site', 'website'])
 def site(message):
-    delete_previous_message(message.chat.id)
     markup = types.InlineKeyboardMarkup()
     btn = types.InlineKeyboardButton(
         text="🔗 Click to continue",
@@ -144,17 +100,15 @@ def site(message):
     )
     markup.add(btn)
     
-    sent_message = bot.send_message(
+    bot.send_message(
         message.chat.id,
         "🌐 Click the button below to visit the website:",
         reply_markup=markup
     )
-    last_message_ids[message.chat.id] = sent_message.message_id
 
 
 @bot.message_handler(commands=['database'])
 def database_command(message):
-    delete_previous_message(message.chat.id)
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton('Availability')
     btn2 = types.KeyboardButton('Buy')
@@ -166,24 +120,22 @@ def database_command(message):
 
     try:
         with open("database.png", "rb") as photo:
-            sent_message = bot.send_photo(
+            bot.send_photo(
                 message.chat.id,
                 photo,
                 caption=definition_text,
                 reply_markup=markup
             )
     except FileNotFoundError:
-        sent_message = bot.send_message(
+        bot.send_message(
             message.chat.id,
             definition_text,
             reply_markup=markup
         )
-    last_message_ids[message.chat.id] = sent_message.message_id
 
 
 @bot.message_handler(commands=['contacts'])
 def contacts_command(message):
-    delete_previous_message(message.chat.id)
     inline_markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Telegram', url='https://t.me/chistakovv')
     inline_markup.row(btn1)
@@ -193,30 +145,27 @@ def contacts_command(message):
 
     try:
         with open("ggsell.jpg", "rb") as photo:
-            sent_message = bot.send_photo(
+            bot.send_photo(
                 message.chat.id,
                 photo,
                 caption="My contacts:",
                 reply_markup=inline_markup
             )
     except FileNotFoundError:
-        sent_message = bot.send_message(message.chat.id, "My contacts:", reply_markup=inline_markup)
-    last_message_ids[message.chat.id] = sent_message.message_id
+        bot.send_message(message.chat.id, "My contacts:", reply_markup=inline_markup)
 
 
 @bot.message_handler(commands=['exchange'])
 def exchange(message):
-    delete_previous_message(message.chat.id)
     try:
         with open("kanye.jpg", "rb") as photo:
-            sent_message = bot.send_photo(
+            bot.send_photo(
                 message.chat.id,
                 photo,
                 caption="Welcome to Currency Converter!\n\nEnter the amount:"
             )
     except FileNotFoundError:
-        sent_message = bot.send_message(message.chat.id, "Welcome to Currency Converter!\n\nEnter the amount:")
-    last_message_ids[message.chat.id] = sent_message.message_id
+        bot.send_message(message.chat.id, "Welcome to Currency Converter!\n\nEnter the amount:")
     bot.register_next_step_handler(message, summa)
 
 
@@ -227,7 +176,7 @@ def summa(message):
     try:
         amount = float(message.text.strip())
     except ValueError:
-        bot.send_message(message.chat.id, '❌ Invalid format, enter the amount')
+        bot.send_message(message.chat.id, 'Invalid format, enter the amount')
         bot.register_next_step_handler(message, summa)
         return
 
@@ -237,8 +186,7 @@ def summa(message):
     btn3 = types.InlineKeyboardButton('USD/GBP', callback_data='usd/gbp')
     btn4 = types.InlineKeyboardButton('OTHER', callback_data='other')
     markup.add(btn1, btn2, btn3, btn4)
-    sent_message = bot.send_message(message.chat.id, '📊 Select a currency pair', reply_markup=markup)
-    last_message_ids[message.chat.id] = sent_message.message_id
+    bot.send_message(message.chat.id, 'Select a currency pair', reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -252,22 +200,17 @@ def callback(call):
             data = response.json()
             rate = data['conversion_rates'][values[1]]
             result = amount * rate
-            bot.answer_callback_query(call.id)
-            sent_message = bot.send_message(
+            bot.send_message(
                 call.message.chat.id,
                 f' {amount} {values[0]} = {round(result, 2)} {values[1]}'
             )
-            last_message_ids[call.message.chat.id] = sent_message.message_id
         else:
-            bot.answer_callback_query(call.id)
-            sent_message = bot.send_message(
+            bot.send_message(
                 call.message.chat.id,
                 ' Enter currency pair (e.g., EUR/GBP, JPY/USD, CHF/RUB):'
             )
-            last_message_ids[call.message.chat.id] = sent_message.message_id
             bot.register_next_step_handler(call.message, process_other_currency)
     except Exception as e:
-        bot.answer_callback_query(call.id)
         bot.send_message(call.message.chat.id, f'❌ Error: {e}')
 
 
@@ -276,13 +219,13 @@ def process_other_currency(message):
     try:
         text = message.text.strip().upper()
         if '/' not in text:
-            bot.send_message(message.chat.id, '❌ Use slash: USD/EUR')
+            bot.send_message(message.chat.id, ' Use slash: USD/EUR')
             bot.register_next_step_handler(message, process_other_currency)
             return
 
         values = text.split('/')
         if len(values) != 2:
-            bot.send_message(message.chat.id, '❌ Use: USD/EUR')
+            bot.send_message(message.chat.id, ' Use: USD/EUR')
             bot.register_next_step_handler(message, process_other_currency)
             return
 
@@ -291,17 +234,14 @@ def process_other_currency(message):
         data = response.json()
         rate = data['conversion_rates'][values[1]]
         result = amount * rate
-        sent_message = bot.send_message(message.chat.id, f' {amount} {values[0]} = {round(result, 2)} {values[1]}')
-        last_message_ids[message.chat.id] = sent_message.message_id
+        bot.send_message(message.chat.id, f' {amount} {values[0]} = {round(result, 2)} {values[1]}')
     except Exception as e:
         bot.send_message(message.chat.id, f'❌ Error: {e}')
         bot.register_next_step_handler(message, process_other_currency)
 
 
-# ===== BUTTON HANDLERS =====
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
-    delete_previous_message(message.chat.id)
     databases_text = """<b>╔════════════════════════════════════╗
 ║         🇷🇺 RUSSIA                 ║
 ╠════════════════════════════════════╣</b>
@@ -358,24 +298,21 @@ def show_databases(message):
 
     try:
         with open("data.jpg", "rb") as photo:
-            sent_message = bot.send_photo(
+            bot.send_photo(
                 message.chat.id,
                 photo,
                 caption=databases_text,
                 parse_mode='HTML'
             )
     except FileNotFoundError:
-        sent_message = bot.send_message(
+        bot.send_message(
             message.chat.id,
             databases_text,
             parse_mode='HTML'
         )
-    last_message_ids[message.chat.id] = sent_message.message_id
-
-
+        
 @bot.message_handler(func=lambda message: message.text == 'Buy')
 def buy_handler(message):
-    delete_previous_message(message.chat.id)
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton('Availability')
     btn2 = types.KeyboardButton('Buy')
@@ -385,31 +322,30 @@ def buy_handler(message):
 
     try:
         with open("Админ.jpg", "rb") as photo:
-            sent_message = bot.send_photo(
+            bot.send_photo(
                 message.chat.id,
                 photo,
                 caption=f"Contact before purchasing - @Chistakovv, {message.from_user.first_name}",
                 reply_markup=markup
             )
     except FileNotFoundError:
-        sent_message = bot.send_message(
+        bot.send_message(
             message.chat.id,
             f"Contact before purchasing - @Chistakovv, {message.from_user.first_name}",
             reply_markup=markup
         )
-    last_message_ids[message.chat.id] = sent_message.message_id
 
 
 @bot.message_handler(func=lambda message: message.text == 'Back')
 def back_handler(message):
-    delete_previous_message(message.chat.id)
+    
     hide_markup = types.ReplyKeyboardRemove()
-    sent_message = bot.send_message(
+    bot.send_message(
         message.chat.id,
         "⚡️ Back to the beginning...",
         reply_markup=hide_markup
     )
-    last_message_ids[message.chat.id] = sent_message.message_id
+   
     start_command(message)
 
 
@@ -521,3 +457,8 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
+
+
+
+
