@@ -199,12 +199,12 @@ def callback(call):
             result = amount * rate
             bot.send_message(
                 call.message.chat.id,
-                f'✅ {amount} {values[0]} = {round(result, 2)} {values[1]}'
+                f' {amount} {values[0]} = {round(result, 2)} {values[1]}'
             )
         else:
             bot.send_message(
                 call.message.chat.id,
-                '✏️ Enter currency pair (e.g., EUR/GBP, JPY/USD, CHF/RUB):'
+                ' Enter currency pair (e.g., EUR/GBP, JPY/USD, CHF/RUB):'
             )
             bot.register_next_step_handler(call.message, process_other_currency)
     except Exception as e:
@@ -231,7 +231,7 @@ def process_other_currency(message):
         data = response.json()
         rate = data['conversion_rates'][values[1]]
         result = amount * rate
-        bot.send_message(message.chat.id, f'✅ {amount} {values[0]} = {round(result, 2)} {values[1]}')
+        bot.send_message(message.chat.id, f' {amount} {values[0]} = {round(result, 2)} {values[1]}')
     except Exception as e:
         bot.send_message(message.chat.id, f'❌ Error: {e}')
         bot.register_next_step_handler(message, process_other_currency)
@@ -320,7 +320,14 @@ def buy_handler(message):
 
 @bot.message_handler(func=lambda message: message.text == 'Back')
 def back_handler(message):
-    bot.send_message(message.chat.id, "⚡️ Back to the beginning...")
+    
+    hide_markup = types.ReplyKeyboardRemove()
+    bot.send_message(
+        message.chat.id,
+        "⚡️ Back to the beginning...",
+        reply_markup=hide_markup
+    )
+   
     start_command(message)
 
 
@@ -432,3 +439,4 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
