@@ -299,7 +299,7 @@ def show_databases(message):
             bot.send_photo(
                 message.chat.id,
                 photo,
-                caption="📋 <b>Available Databases</b>",
+                caption="📋 <b>Available Databases:</b>",
                 parse_mode='HTML'
             )
     except FileNotFoundError:
@@ -510,6 +510,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
