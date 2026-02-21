@@ -56,22 +56,22 @@ def delete_previous_message(chat_id):
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
-    # Отправляем фото (всегда)
+    # Отправляем фото
     try:
         with open("baba.jpg", "rb") as photo:
-            bot.send_photo(
+            photo_message = bot.send_photo(
                 message.chat.id,
                 photo,
                 caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
     except FileNotFoundError:
-        bot.send_message(
+        photo_message = bot.send_message(
             message.chat.id,
             f"It is a pleasure to meet you, {message.from_user.first_name}"
         )
 
     # Отправляем список команд
-    bot.send_message(
+    commands_message = bot.send_message(
         message.chat.id,
         "I can provide you with a price list for purchasing highly specialized databases.\n\n"
         "Commands:\n"
@@ -84,11 +84,15 @@ def start_command(message):
         "CEO - @chistakovv"
     )
     
-    # Пытаемся закрепить последнее сообщение (список команд)
+    # Пытаемся закрепить сообщение с командами
     try:
-        bot.pin_chat_message(message.chat.id, message.message_id + 2)  # +2 потому что было фото + это сообщение
-    except:
-        pass  # Если не получилось закрепить, игнорируем
+        bot.pin_chat_message(
+            chat_id=message.chat.id,
+            message_id=commands_message.message_id
+        )
+        print(f"✅ Message pinned for user {message.chat.id}")
+    except Exception as e:
+        print(f"❌ Failed to pin message: {e}")
 
 
 @bot.message_handler(commands=['help'])
@@ -272,44 +276,27 @@ def process_other_currency(message):
         bot.send_message(message.chat.id, f'❌ Error: {e}')
         bot.register_next_step_handler(message, process_other_currency)
 
-
-@bot.message_handler(func=lambda message: message.text == 'Availability')
-def show_databases(message):
-    # Сначала отправляем фото с подписью
-    try:
-        with open("data.jpg", "rb") as photo:
-            bot.send_photo(
-                message.chat.id,
-                photo,
-                caption="📋 <b>Available Databases</b>",
-                parse_mode='HTML'
-            )
-    except FileNotFoundError:
-        bot.send_message(
-            message.chat.id,
-            "📋 <b>Available Databases</b>",
-            parse_mode='HTML'
-        )
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    # Отладочный вывод
+    print(f"📩 Получено сообщение: '{message.text}' от {message.from_user.first_name}")
     
-@bot.message_handler(func=lambda message: message.text == 'Availability')
-def show_databases(message):
-    # Сначала отправляем фото с подписью
-    try:
-        with open("data.jpg", "rb") as photo:
-            bot.send_photo(
-                message.chat.id,
-                photo,
-                caption="📋 <b>Available Databases:</b>",
-                parse_mode='HTML'
-            )
-    except FileNotFoundError:
-        bot.send_message(
-            message.chat.id,
-            "📋 <b>Available Databases</b>",
-            parse_mode='HTML'
-        )
-    
+    # Проверяем все возможные варианты текста кнопки
+    if message.text in ['Availability', 'availability', 'AVAILABILITY']:
+        print("✅ Обнаружена команда Availability")
+        show_databases(message)
+    elif message.text in ['Buy', 'buy', 'BUY']:
+        print("✅ Обнаружена команда Buy")
+        buy_handler(message)
+    elif message.text in ['Back', 'back', 'BACK']:
+        print("✅ Обнаружена команда Back")
+        back_handler(message)
+    elif message.text.lower() == 'hello':
+        bot.send_message(message.chat.id, f'Hello, {message.from_user.first_name}!')
+    elif message.text.lower() == 'id':
+        bot.send_message(message.chat.id, f'Your ID: {message.from_user.id}')
     # Отправляем список с жирными названиями стран
+    
     databases_text = ("""<b>───── 🇷🇺 RUSSIA ─────</b>
 • FR [1995-2021]
 • ADIS [2021]
@@ -510,6 +497,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
