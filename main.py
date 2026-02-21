@@ -13,6 +13,8 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 # Хранилище ID последних сообщений для каждого пользователя
 last_message_ids = {}
+# Хранилище ID последних сообщений для каждого пользователя
+last_bot_messages = {}
 
 # ===== WEBHOOK HANDLER =====
 class WebhookHandler(BaseHTTPRequestHandler):
@@ -53,7 +55,6 @@ def delete_previous_message(chat_id):
             bot.delete_message(chat_id, last_message_ids[chat_id])
         except:
             pass  # Если сообщение уже удалено или слишком старое
-
 @bot.message_handler(commands=['start'])
 def start_command(message):
     # Удаляем сообщение пользователя
@@ -62,22 +63,32 @@ def start_command(message):
     except:
         pass
     
+    # Удаляем предыдущие сообщения бота для этого пользователя
+    chat_id = message.chat.id
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
+    
     # Отправляем фото
     try:
         with open("baba.jpg", "rb") as photo:
-            bot.send_photo(
+            sent_photo = bot.send_photo(
                 message.chat.id,
                 photo,
                 caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
+            last_bot_messages[chat_id] = sent_photo.message_id
     except FileNotFoundError:
-        bot.send_message(
+        sent_text = bot.send_message(
             message.chat.id,
             f"It is a pleasure to meet you, {message.from_user.first_name}"
         )
+        last_bot_messages[chat_id] = sent_text.message_id
 
     # Отправляем список команд
-    bot.send_message(
+    sent_commands = bot.send_message(
         message.chat.id,
         "I can provide you with a price list for purchasing highly specialized databases.\n\n"
         "Commands:\n"
@@ -89,33 +100,56 @@ def start_command(message):
         "/exchange - currency converter\n\n"
         "CEO - @chistakovv"
     )
+    last_bot_messages[chat_id] = sent_commands.message_id
+
 
 @bot.message_handler(commands=['help'])
 def help_command(message):
+    chat_id = message.chat.id
+    
+    # Удаляем сообщение пользователя
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
     
+    # Удаляем предыдущее сообщение бота
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
+    
     try:
         with open("jep.jpg", "rb") as photo:
-            bot.send_photo(
-                message.chat.id,
+            sent = bot.send_photo(
+                chat_id,
                 photo,
                 caption="Is there an error? Contact me on Telegram @chistakovv"
             )
+            last_bot_messages[chat_id] = sent.message_id
     except FileNotFoundError:
-        bot.send_message(
-            message.chat.id,
+        sent = bot.send_message(
+            chat_id,
             'Is there an error? Contact me on Telegram @chistakovv'
         )
-
+        last_bot_messages[chat_id] = sent.message_id
+        
+    
 @bot.message_handler(commands=['site', 'website'])
 def site(message):
+    chat_id = message.chat.id
+    
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
+    
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
     
     markup = types.InlineKeyboardMarkup()
     btn = types.InlineKeyboardButton(
@@ -124,18 +158,27 @@ def site(message):
     )
     markup.add(btn)
     
-    bot.send_message(
-        message.chat.id,
+    sent = bot.send_message(
+        chat_id,
         "🌐 Click the button below to visit the website:",
         reply_markup=markup
     )
-
+    last_bot_messages[chat_id] = sent.message_id
+    
 @bot.message_handler(commands=['database'])
 def database_command(message):
+    chat_id = message.chat.id
+    
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
+    
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton('Availability')
@@ -148,25 +191,35 @@ def database_command(message):
 
     try:
         with open("database.png", "rb") as photo:
-            bot.send_photo(
-                message.chat.id,
+            sent = bot.send_photo(
+                chat_id,
                 photo,
                 caption=definition_text,
                 reply_markup=markup
             )
+            last_bot_messages[chat_id] = sent.message_id
     except FileNotFoundError:
-        bot.send_message(
-            message.chat.id,
+        sent = bot.send_message(
+            chat_id,
             definition_text,
             reply_markup=markup
         )
+        last_bot_messages[chat_id] = sent.message_id
 
 @bot.message_handler(commands=['contacts'])
 def contacts_command(message):
+    chat_id = message.chat.id
+    
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
+    
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
     
     inline_markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton('Telegram', url='https://t.me/chistakovv')
@@ -177,55 +230,77 @@ def contacts_command(message):
 
     try:
         with open("ggsell.jpg", "rb") as photo:
-            bot.send_photo(
-                message.chat.id,
+            sent = bot.send_photo(
+                chat_id,
                 photo,
                 caption="My contacts:",
                 reply_markup=inline_markup
             )
+            last_bot_messages[chat_id] = sent.message_id
     except FileNotFoundError:
-        bot.send_message(message.chat.id, "My contacts:", reply_markup=inline_markup)
+        sent = bot.send_message(chat_id, "My contacts:", reply_markup=inline_markup)
+        last_bot_messages[chat_id] = sent.message_id
 
 @bot.message_handler(commands=['exchange'])
 def exchange(message):
+    chat_id = message.chat.id
+    
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
     
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
+    
     try:
         with open("kanye.jpg", "rb") as photo:
-            bot.send_photo(
-                message.chat.id,
+            sent = bot.send_photo(
+                chat_id,
                 photo,
                 caption="Welcome to Currency Converter!\n\nEnter the amount:"
             )
+            last_bot_messages[chat_id] = sent.message_id
     except FileNotFoundError:
-        bot.send_message(message.chat.id, "Welcome to Currency Converter!\n\nEnter the amount:")
+        sent = bot.send_message(chat_id, "Welcome to Currency Converter!\n\nEnter the amount:")
+        last_bot_messages[chat_id] = sent.message_id
     bot.register_next_step_handler(message, summa)
 
-@bot.message_handler(func=lambda message: message.text == 'Availability')
+bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
+    chat_id = message.chat.id
+    
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except:
         pass
+    
+    if chat_id in last_bot_messages:
+        try:
+            bot.delete_message(chat_id, last_bot_messages[chat_id])
+        except:
+            pass
     
     # Сначала отправляем фото с подписью
     try:
         with open("data.jpg", "rb") as photo:
-            bot.send_photo(
-                message.chat.id,
+            sent_photo = bot.send_photo(
+                chat_id,
                 photo,
                 caption="📋 <b>Available Databases</b>",
                 parse_mode='HTML'
             )
+            last_bot_messages[chat_id] = sent_photo.message_id
     except FileNotFoundError:
-        bot.send_message(
-            message.chat.id,
+        sent_text = bot.send_message(
+            chat_id,
             "📋 <b>Available Databases</b>",
             parse_mode='HTML'
         )
+        last_bot_messages[chat_id] = sent_text.message_id
     
     # Отправляем список
     databases_text = """<b>───── 🇷🇺 RUSSIA ─────</b>
@@ -437,6 +512,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
