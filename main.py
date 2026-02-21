@@ -56,53 +56,19 @@ def delete_previous_message(chat_id):
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
-    # Проверяем, есть ли уже закрепленное сообщение
+    # Отправляем фото (всегда)
     try:
-        chat = bot.get_chat(message.chat.id)
-        if not chat.pinned_message:
-            # Если нет закрепленного сообщения, отправляем и закрепляем фото
-            try:
-                with open("baba.jpg", "rb") as photo:
-                    sent_message = bot.send_photo(
-                        message.chat.id,
-                        photo,
-                        caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
-                    )
-                    bot.pin_chat_message(message.chat.id, sent_message.message_id)
-            except FileNotFoundError:
-                sent_message = bot.send_message(
-                    message.chat.id,
-                    f"It is a pleasure to meet you, {message.from_user.first_name}"
-                )
-                bot.pin_chat_message(message.chat.id, sent_message.message_id)
-        else:
-            # Если закрепленное сообщение уже есть, просто отправляем фото без закрепления
-            try:
-                with open("baba.jpg", "rb") as photo:
-                    bot.send_photo(
-                        message.chat.id,
-                        photo,
-                        caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
-                    )
-            except FileNotFoundError:
-                bot.send_message(
-                    message.chat.id,
-                    f"It is a pleasure to meet you, {message.from_user.first_name}"
-                )
-    except:
-        # Если не удалось получить информацию о чате, отправляем фото без проверки
-        try:
-            with open("baba.jpg", "rb") as photo:
-                bot.send_photo(
-                    message.chat.id,
-                    photo,
-                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
-                )
-        except FileNotFoundError:
-            bot.send_message(
+        with open("baba.jpg", "rb") as photo:
+            bot.send_photo(
                 message.chat.id,
-                f"It is a pleasure to meet you, {message.from_user.first_name}"
+                photo,
+                caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
+    except FileNotFoundError:
+        bot.send_message(
+            message.chat.id,
+            f"It is a pleasure to meet you, {message.from_user.first_name}"
+        )
 
     # Отправляем список команд
     bot.send_message(
@@ -117,6 +83,12 @@ def start_command(message):
         "/exchange - currency converter\n\n"
         "CEO - @chistakovv"
     )
+    
+    # Пытаемся закрепить последнее сообщение (список команд)
+    try:
+        bot.pin_chat_message(message.chat.id, message.message_id + 2)  # +2 потому что было фото + это сообщение
+    except:
+        pass  # Если не получилось закрепить, игнорируем
 
 
 @bot.message_handler(commands=['help'])
@@ -338,7 +310,7 @@ def show_databases(message):
         )
     
     # Отправляем список с жирными названиями стран
-    databases_text = """<b>───── 🇷🇺 RUSSIA ─────</b>
+    databases_text = ("""<b>───── 🇷🇺 RUSSIA ─────</b>
 • FR [1995-2021]
 • ADIS [2021]
 • CCM MIA [2019-2022]
@@ -538,6 +510,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
