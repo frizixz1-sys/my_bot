@@ -42,21 +42,24 @@ def run_webhook_server():
     server.serve_forever()
 
 
-# ===== COMMANDS =====
 @bot.message_handler(commands=['start'])
 def start_command(message):
     try:
         with open("baba.jpg", "rb") as photo:
-            bot.send_photo(
+            sent_message = bot.send_photo(
                 message.chat.id,
                 photo,
                 caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
+            # Закрепляем отправленное сообщение
+            bot.pin_chat_message(message.chat.id, sent_message.message_id)
     except FileNotFoundError:
-        bot.send_message(
+        sent_message = bot.send_message(
             message.chat.id,
             f"It is a pleasure to meet you, {message.from_user.first_name}"
         )
+        # Закрепляем отправленное сообщение
+        bot.pin_chat_message(message.chat.id, sent_message.message_id)
 
     bot.send_message(
         message.chat.id,
@@ -307,7 +310,7 @@ def show_databases(message):
             databases_text,
             parse_mode='HTML'
         )
-
+        
 @bot.message_handler(func=lambda message: message.text == 'Buy')
 def buy_handler(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -454,6 +457,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
