@@ -298,11 +298,9 @@ def process_other_currency(message):
         bot.register_next_step_handler(message, process_other_currency)
 
 
-# ===== BUTTON HANDLERS =====
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
-    delete_previous_message(message.chat.id)
-        databases_text = """<b>╔════════════════════════════════════╗
+    databases_text = """<b>╔════════════════════════════════════╗
 ║         🇷🇺 RUSSIA                 ║
 ╠════════════════════════════════════╣</b>
 ║ ▫️ FR [1995-2021]                  ║
@@ -358,19 +356,18 @@ def show_databases(message):
 
     try:
         with open("data.jpg", "rb") as photo:
-            sent_message = bot.send_photo(
+            bot.send_photo(
                 message.chat.id,
                 photo,
                 caption=databases_text,
                 parse_mode='HTML'
             )
-            except FileNotFoundError:
-        sent_message = bot.send_message(
+    except FileNotFoundError:
+        bot.send_message(
             message.chat.id,
             databases_text,
             parse_mode='HTML'
         )
-    last_message_ids[message.chat.id] = sent_message.message_id
 
 
 @bot.message_handler(func=lambda message: message.text == 'Buy')
@@ -521,4 +518,5 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
