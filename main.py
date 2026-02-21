@@ -54,17 +54,13 @@ def delete_previous_message(chat_id):
         except:
             pass  # Если сообщение уже удалено или слишком старое
 
-# ===== COMMANDS =====
 @bot.message_handler(commands=['start'])
 def start_command(message):
-    # Удаляем предыдущее сообщение бота
-    delete_previous_message(message.chat.id)
-    
     # Проверяем, есть ли уже закрепленное сообщение
     try:
         chat = bot.get_chat(message.chat.id)
         if not chat.pinned_message:
-            # Если нет закрепленного сообщения, отправляем и закрепляем
+            # Если нет закрепленного сообщения, отправляем и закрепляем фото
             try:
                 with open("baba.jpg", "rb") as photo:
                     sent_message = bot.send_photo(
@@ -73,35 +69,43 @@ def start_command(message):
                         caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
                     )
                     bot.pin_chat_message(message.chat.id, sent_message.message_id)
-                    last_message_ids[message.chat.id] = sent_message.message_id
             except FileNotFoundError:
                 sent_message = bot.send_message(
                     message.chat.id,
                     f"It is a pleasure to meet you, {message.from_user.first_name}"
                 )
                 bot.pin_chat_message(message.chat.id, sent_message.message_id)
-                last_message_ids[message.chat.id] = sent_message.message_id
+        else:
+            # Если закрепленное сообщение уже есть, просто отправляем фото без закрепления
+            try:
+                with open("baba.jpg", "rb") as photo:
+                    bot.send_photo(
+                        message.chat.id,
+                        photo,
+                        caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
+                    )
+            except FileNotFoundError:
+                bot.send_message(
+                    message.chat.id,
+                    f"It is a pleasure to meet you, {message.from_user.first_name}"
+                )
     except:
-        # Если не удалось получить информацию о чате, просто отправляем без проверки
+        # Если не удалось получить информацию о чате, отправляем фото без проверки
         try:
             with open("baba.jpg", "rb") as photo:
-                sent_message = bot.send_photo(
+                bot.send_photo(
                     message.chat.id,
                     photo,
                     caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
                 )
-                bot.pin_chat_message(message.chat.id, sent_message.message_id)
-                last_message_ids[message.chat.id] = sent_message.message_id
         except FileNotFoundError:
-            sent_message = bot.send_message(
+            bot.send_message(
                 message.chat.id,
                 f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
-            bot.pin_chat_message(message.chat.id, sent_message.message_id)
-            last_message_ids[message.chat.id] = sent_message.message_id
 
-    # Отправляем список команд и сохраняем его ID
-    sent_message = bot.send_message(
+    # Отправляем список команд
+    bot.send_message(
         message.chat.id,
         "I can provide you with a price list for purchasing highly specialized databases.\n\n"
         "Commands:\n"
@@ -113,7 +117,6 @@ def start_command(message):
         "/exchange - currency converter\n\n"
         "CEO - @chistakovv"
     )
-    last_message_ids[message.chat.id] = sent_message.message_id
 
 
 @bot.message_handler(commands=['help'])
@@ -316,7 +319,7 @@ def show_databases(message):
             parse_mode='HTML'
         )
     
-  @bot.message_handler(func=lambda message: message.text == 'Availability')
+@bot.message_handler(func=lambda message: message.text == 'Availability')
 def show_databases(message):
     # Сначала отправляем фото с подписью
     try:
@@ -334,62 +337,52 @@ def show_databases(message):
             parse_mode='HTML'
         )
     
-    # Отправляем красивый список в рамке
-    databases_text = """<code>
-╔════════════════════════════╗
-║        🇷🇺 RUSSIA         ║
-╠════════════════════════════╣
-║ • FR [1995-2021]           ║
-║ • ADIS [2021]              ║
-║ • CCM MIA [2019-2022]      ║
-║ • STSI [1998-2005]         ║
-║ • BO [2022-2025]           ║
-║ • FSB [2017-2025]          ║
-║ • UFSB [2015-2024]         ║
-║ • ESIA [2023]              ║
-║ • HCS [2018-2024]          ║
-║ • USRNE [2000-2025]        ║
-║ • UGISZ [2014]             ║
-║ • NSPK [2015-2017]         ║
-║ • UMVD [2019]              ║
-╠════════════════════════════╣
-║      🇰🇿 KAZAKHSTAN       ║
-╠════════════════════════════╣
-║ • ACS MIA [2021-2022]      ║
-║ • CBR [2022]               ║
-║ • EBG [2000-2012]          ║
-║ • BB [2023]                ║
-╠════════════════════════════╣
-║       🇧🇾 BELARUS         ║
-╠════════════════════════════╣
-║ • ACS MIA [2016-2020]      ║
-║ • CBP [2020-2025]          ║
-║ • BG [2014-2017]           ║
-╠════════════════════════════╣
-║       🇺🇦 UKRAINE         ║
-╠════════════════════════════╣
-║ • UMVD [2000-2016]         ║
-║ • EBR [2005-2023]          ║
-║ • KR [2009-2022]           ║
-║ • BPS [2023-2025]          ║
-╠════════════════════════════╣
-║         🇺🇸 USA           ║
-╠════════════════════════════╣
-║ • FBI [2000]               ║
-║ • NCIC [2017-2021]         ║
-║ • CJIS [2022-2023]         ║
-║ • NICS [2006]              ║
-║ • DHS [2002]               ║
-║ • USMS [2019]              ║
-╠════════════════════════════╣
-║       🇵🇱 POLAND          ║
-╠════════════════════════════╣
-║ • KGP [2019-2021]          ║
-║ • KSIP [2001-2007]         ║
-║ • SG [2006-2015]           ║
-║ • ABW [2014-2017]          ║
-╚════════════════════════════╝
-</code>"""
+    # Отправляем список с жирными названиями стран
+    databases_text = """<b>───── 🇷🇺 RUSSIA ─────</b>
+• FR [1995-2021]
+• ADIS [2021]
+• CCM MIA [2019-2022]
+• STSI [1998-2005]
+• BO [2022-2025]
+• FSB [2017-2025]
+• UFSB [2015-2024]
+• ESIA [2023]
+• HCS [2018-2024]
+• USRNE [2000-2025]
+• UGISZ [2014]
+• NSPK [2015-2017]
+• UMVD [2019]
+
+<b>───── 🇰🇿 KAZAKHSTAN ─────</b>
+• ACS MIA [2021-2022]
+• CBR [2022]
+• EBG [2000-2012]
+• BB [2023]
+
+<b>───── 🇧🇾 BELARUS ─────</b>
+• ACS MIA [2016-2020]
+• CBP [2020-2025]
+• BG [2014-2017]
+
+<b>───── 🇺🇦 UKRAINE ─────</b>
+• UMVD [2000-2016]
+• EBR [2005-2023]
+• KR [2009-2022]
+• BPS [2023-2025]
+
+<b>───── 🇺🇸 USA ─────</b>
+• FBI [2000]
+• NCIC [2017-2021]
+• CJIS [2022-2023]
+• NICS [2006]
+• DHS [2002]
+• USMS [2019]
+
+<b>───── 🇵🇱 POLAND ─────</b>
+• KGP [2019-2021]
+• KSIP [2001-2007]
+• SG [2006-2015]
+• ABW [2014-2017]"""
 
     bot.send_message(
         message.chat.id,
@@ -545,6 +538,7 @@ if __name__ == '__main__':
     # Держим главный поток активным
     while True:
         time.sleep(60)
+
 
 
 
