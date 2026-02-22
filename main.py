@@ -156,18 +156,19 @@ def introduction_command(message):
     delete_previous_message(chat_id)
     
     intro_text = """
-<b>🔐 ABOUT OUR SERVICE</b>
+<b> ABOUT OUR SERVICE</b>
 
 The bot actively collaborates with many specialized anonymous database sources, which we are not allowed to disclose.
 
 This service only provides access to databases from certain <b>EU countries</b>. The active administrator (CEO) is <b>@Chistakovv</b>; the others maintain complete anonymity.
 
-<b>📌 AUTHORIZED RESOURCES:</b>
-━━━━━━━━━━━━━━━━━━━━━
-• <b>DARKNET.ARMY</b> — anonymous darknet resources
-• <b>QuickPorno.t.me</b> — specialized database access
+<b> AUTHORIZED RESOURCES:</b>
+━━━━━━━━━━━━━━━━━━━━
 
-━━━━━━━━━━━━━━━━━━━━━
+• <b>DARKNET.ARMY</b> 
+• <b>QuickPorno.t.me</b> 
+
+━━━━━━━━━━━━━━━━━━━━
 <i>All data is provided for informational purposes only.</i>
 """
 
@@ -725,3 +726,4 @@ if __name__ == '__main__':
     
     while True:
         time.sleep(60)
+
