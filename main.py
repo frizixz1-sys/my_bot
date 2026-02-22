@@ -49,16 +49,19 @@ def run_webhook_server():
 
 # ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ =====
 def delete_previous_message(chat_id):
-    # Проверяем, можно ли удалять сообщение (не из /start)
     if chat_id in last_message_id:
+        message_id = last_message_id[chat_id]
+        
         # Проверяем, не является ли это сообщение от /start
-        if chat_id in start_message_ids and last_message_id[chat_id] in start_message_ids[chat_id]:
-            print(f"⏭️ Пропускаем удаление сообщения от /start: {last_message_id[chat_id]}")
+        if chat_id in start_message_ids and message_id in start_message_ids[chat_id]:
+            print(f"⏭️ Защищено от удаления (сообщение от /start): {message_id}")
             return
         
         try:
-            bot.delete_message(chat_id, last_message_id[chat_id])
-            print(f"✅ Удалено сообщение: {last_message_id[chat_id]}")
+            bot.delete_message(chat_id, message_id)
+            print(f"✅ Удалено сообщение: {message_id}")
+            # Удаляем ID из хранилища после успешного удаления
+            del last_message_id[chat_id]
         except Exception as e:
             print(f"❌ Не удалось удалить: {e}")
 
@@ -72,15 +75,15 @@ def start_command(message):
     if chat_id not in start_message_ids:
         start_message_ids[chat_id] = []
     
+    # Удаляем сообщение пользователя с командой /start
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except:
+        pass
+    
     # Проверяем, первый ли это запуск
     if chat_id not in first_start_done:
         print(f"🚀 Первый запуск для пользователя {chat_id}")
-        
-        # Удаляем сообщение пользователя с командой /start
-        try:
-            bot.delete_message(chat_id, message.message_id)
-        except:
-            pass
         
         # Отправляем фото
         try:
@@ -130,28 +133,22 @@ def start_command(message):
     else:
         print(f"🔄 Повторный запуск для пользователя {chat_id}")
         
-        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
-        delete_previous_message(chat_id)
-        
-        # Удаляем сообщение пользователя с командой
-        try:
-            bot.delete_message(chat_id, message.message_id)
-        except:
-            pass
-        
         # Отправляем фото
         try:
             with open("baba.jpg", "rb") as photo:
-                bot.send_photo(
+                sent_photo = bot.send_photo(
                     chat_id,
                     photo,
                     caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
                 )
+                # Сохраняем ID сообщения от /start
+                start_message_ids[chat_id].append(sent_photo.message_id)
         except FileNotFoundError:
-            bot.send_message(
+            sent_text = bot.send_message(
                 chat_id,
                 f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
+            start_message_ids[chat_id].append(sent_text.message_id)
 
         # Отправляем список команд
         sent_commands = bot.send_message(
@@ -166,9 +163,8 @@ def start_command(message):
             "/exchange - currency converter\n\n"
             "CEO - @chistakovv"
         )
-        
-        # Сохраняем ID нового сообщения для последующего удаления
-        last_message_id[chat_id] = sent_commands.message_id
+        # Сохраняем ID сообщения от /start
+        start_message_ids[chat_id].append(sent_commands.message_id)
 
 
 @bot.message_handler(commands=['database'])
