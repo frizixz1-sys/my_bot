@@ -160,16 +160,18 @@ def introduction_command(message):
     markup.add(btn)
     
     intro_text = """
-<b>🔐 ABOUT OUR SERVICE</b>
+<b> ABOUT OUR SERVICE</b>
 
 The bot actively collaborates with many specialized anonymous database sources, which we are not allowed to disclose.
 
 This service only provides access to databases from certain <b>EU countries</b>. The active administrator (CEO) is <b>@Chistakovv</b>; the others maintain complete anonymity.
 
-<b>📌 AUTHORIZED RESOURCES:</b>
+<b> BASIC RESOURCES:</b>
 ━━━━━━━━━━━━━━━━━━━━
+
 • <b>DARKNET.ARMY</b>
 • <b>QuickPorno.t.me</b>
+
 ━━━━━━━━━━━━━━━━━━━━
 
 <i>All data is provided for informational purposes only.</i>
@@ -754,3 +756,4 @@ if __name__ == '__main__':
     
     while True:
         time.sleep(60)
+
