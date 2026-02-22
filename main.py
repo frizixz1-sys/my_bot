@@ -155,22 +155,85 @@ def introduction_command(message):
     
     delete_previous_message(chat_id)
     
+    # Создаем кнопку для перехода в /database
+    markup = types.InlineKeyboardMarkup()
+    btn = types.InlineKeyboardButton(
+        text="📂 GO TO DATABASES",
+        callback_data='go_to_database'
+    )
+    markup.add(btn)
+    
     intro_text = """
-<b> ABOUT OUR SERVICE</b>
+<b>ABOUT OUR SERVICE</b>
 
 The bot actively collaborates with many specialized anonymous database sources, which we are not allowed to disclose.
 
 This service only provides access to databases from certain <b>EU countries</b>. The active administrator (CEO) is <b>@Chistakovv</b>; the others maintain complete anonymity.
 
 <b> AUTHORIZED RESOURCES:</b>
-━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━
 
 • <b>DARKNET.ARMY</b> 
 • <b>QuickPorno.t.me</b> 
 
-━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━
+
 <i>All data is provided for informational purposes only.</i>
 """
+@bot.callback_query_handler(func=lambda call: True)
+def callback(call):
+    global amount
+    chat_id = call.message.chat.id
+    
+    # Обработка кнопки перехода в /database
+    if call.data == 'go_to_database':
+        # Удаляем сообщение с информацией
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except:
+            pass
+        
+        # Создаем фейковое сообщение для вызова database_command
+        class FakeMessage:
+            def __init__(self, chat_id):
+                self.chat = type('obj', (object,), {'id': chat_id})
+                self.chat.id = chat_id
+                self.message_id = 0
+                self.from_user = call.from_user
+                self.text = '/database'
+        
+        fake_message = FakeMessage(chat_id)
+        database_command(fake_message)
+        bot.answer_callback_query(call.id)
+        return
+    
+    # Остальной код конвертера валют...
+    try:
+        if call.data != 'other':
+            # ... весь существующий код конвертера ...
+            pass
+        # ... остальной код ...
+    except Exception as e:
+        # ... обработка ошибок ...
+        pass
+    try:
+        with open("000.jpg", "rb") as photo:
+            sent = bot.send_photo(
+                chat_id,
+                photo,
+                caption=intro_text,
+                parse_mode='HTML',
+                reply_markup=markup  # Добавляем кнопку под фото
+            )
+            last_message_id[chat_id] = sent.message_id
+    except FileNotFoundError:
+        sent = bot.send_message(
+            chat_id,
+            intro_text,
+            parse_mode='HTML',
+            reply_markup=markup  # Добавляем кнопку под текст
+        )
+        last_message_id[chat_id] = sent.message_id
 
     try:
         with open("000.jpg", "rb") as photo:
@@ -726,5 +789,6 @@ if __name__ == '__main__':
     
     while True:
         time.sleep(60)
+
 
 
