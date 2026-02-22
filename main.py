@@ -11,9 +11,10 @@ API_KEY = '14a528b05de9f38b88ae0fe1'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Хранилище для отслеживания первого запуска и последних сообщений
+# Хранилище для отслеживания первого запуска и ID сообщений от /start
 first_start_done = {}
-last_message_id = {}
+start_message_ids = {}  # ID сообщений от /start, которые нельзя удалять
+last_message_id = {}     # ID последних сообщений для удаления
 
 # ===== WEBHOOK HANDLER =====
 class WebhookHandler(BaseHTTPRequestHandler):
@@ -48,7 +49,13 @@ def run_webhook_server():
 
 # ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ =====
 def delete_previous_message(chat_id):
+    # Проверяем, можно ли удалять сообщение (не из /start)
     if chat_id in last_message_id:
+        # Проверяем, не является ли это сообщение от /start
+        if chat_id in start_message_ids and last_message_id[chat_id] in start_message_ids[chat_id]:
+            print(f"⏭️ Пропускаем удаление сообщения от /start: {last_message_id[chat_id]}")
+            return
+        
         try:
             bot.delete_message(chat_id, last_message_id[chat_id])
             print(f"✅ Удалено сообщение: {last_message_id[chat_id]}")
@@ -60,6 +67,10 @@ def delete_previous_message(chat_id):
 @bot.message_handler(commands=['start'])
 def start_command(message):
     chat_id = message.chat.id
+    
+    # Инициализируем хранилище для этого пользователя, если его нет
+    if chat_id not in start_message_ids:
+        start_message_ids[chat_id] = []
     
     # Проверяем, первый ли это запуск
     if chat_id not in first_start_done:
@@ -79,6 +90,8 @@ def start_command(message):
                     photo,
                     caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
                 )
+                # Сохраняем ID сообщения от /start
+                start_message_ids[chat_id].append(sent_photo.message_id)
                 # Закрепляем сообщение
                 try:
                     bot.pin_chat_message(chat_id, sent_photo.message_id)
@@ -90,6 +103,7 @@ def start_command(message):
                 chat_id,
                 f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
+            start_message_ids[chat_id].append(sent_text.message_id)
             try:
                 bot.pin_chat_message(chat_id, sent_text.message_id)
             except:
@@ -108,14 +122,15 @@ def start_command(message):
             "/exchange - currency converter\n\n"
             "CEO - @chistakovv"
         )
+        # Сохраняем ID сообщения от /start
+        start_message_ids[chat_id].append(sent_commands.message_id)
         
         # Сохраняем информацию о первом запуске
         first_start_done[chat_id] = True
-        # НЕ сохраняем ID для удаления, чтобы эти сообщения остались
     else:
         print(f"🔄 Повторный запуск для пользователя {chat_id}")
         
-        # Удаляем предыдущее сообщение бота
+        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
         delete_previous_message(chat_id)
         
         # Удаляем сообщение пользователя с командой
@@ -298,7 +313,7 @@ def other_commands(message):
     except:
         pass
     
-    # Удаляем предыдущее сообщение бота
+    # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
     delete_previous_message(chat_id)
     
     # Обрабатываем команды
@@ -388,7 +403,7 @@ def buy_handler(message):
     except:
         pass
     
-    # Удаляем предыдущее сообщение бота
+    # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
     delete_previous_message(chat_id)
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -432,7 +447,7 @@ def back_handler(message):
     except:
         pass
     
-    # Удаляем предыдущее сообщение бота
+    # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
     delete_previous_message(chat_id)
     
     hide_markup = types.ReplyKeyboardRemove()
@@ -462,7 +477,7 @@ def process_amount(message):
         except:
             pass
         
-        # Удаляем предыдущее сообщение бота
+        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
         delete_previous_message(chat_id)
         
         # Создаем клавиатуру с кнопками выбора валют
@@ -503,7 +518,7 @@ def callback(call):
                 rate = data['conversion_rates'][values[1]]
                 result = amount * rate
                 
-                # Удаляем сообщение с кнопками
+                # Удаляем сообщение с кнопками (если это не от /start)
                 delete_previous_message(chat_id)
                 
                 # Создаем новые кнопки для продолжения
@@ -573,7 +588,7 @@ def process_other_currency(message):
             rate = data['conversion_rates'][values[1]]
             result = amount * rate
             
-            # Удаляем предыдущее сообщение
+            # Удаляем предыдущее сообщение (если это не от /start)
             delete_previous_message(chat_id)
             
             # Создаем новые кнопки
@@ -674,7 +689,7 @@ def info(message):
         return
         
     if message.text.lower() == 'hello':
-        # Удаляем предыдущее сообщение бота
+        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
         delete_previous_message(chat_id)
         
         # Удаляем сообщение пользователя
@@ -686,7 +701,7 @@ def info(message):
         sent = bot.send_message(chat_id, f'Hello, {message.from_user.first_name}!')
         last_message_id[chat_id] = sent.message_id
     elif message.text.lower() == 'id':
-        # Удаляем предыдущее сообщение бота
+        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
         delete_previous_message(chat_id)
         
         # Удаляем сообщение пользователя
