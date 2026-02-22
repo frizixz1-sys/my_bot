@@ -65,13 +65,6 @@ def start_command(message):
     except:
         pass
     
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton('Availability')
-    btn2 = types.KeyboardButton('Buy')
-    btn3 = types.KeyboardButton('Introduction')
-    btn4 = types.KeyboardButton('Back')
-    markup.add(btn1, btn2, btn3, btn4)
-    
     if chat_id not in first_start_done:
         print(f"🚀 Первый запуск для пользователя {chat_id}")
         
@@ -80,8 +73,7 @@ def start_command(message):
                 sent_photo = bot.send_photo(
                     chat_id,
                     photo,
-                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}",
-                    reply_markup=markup
+                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
                 )
                 start_message_ids[chat_id].append(sent_photo.message_id)
                 try:
@@ -92,8 +84,7 @@ def start_command(message):
         except FileNotFoundError:
             sent_text = bot.send_message(
                 chat_id,
-                f"It is a pleasure to meet you, {message.from_user.first_name}",
-                reply_markup=markup
+                f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
             start_message_ids[chat_id].append(sent_text.message_id)
             try:
@@ -106,13 +97,13 @@ def start_command(message):
             "I can provide you with a price list for purchasing highly specialized databases.\n\n"
             "Commands:\n"
             "/start - restart\n"
+            "/introduction - information about the bot\n"
             "/help - help\n"
             "/site - visit website\n"
             "/database - available databases\n"
             "/contacts - my contacts\n"
             "/exchange - currency converter\n\n"
-            "CEO - @chistakovv",
-            reply_markup=markup
+            "CEO - @chistakovv"
         )
         start_message_ids[chat_id].append(sent_commands.message_id)
         first_start_done[chat_id] = True
@@ -124,15 +115,13 @@ def start_command(message):
                 sent_photo = bot.send_photo(
                     chat_id,
                     photo,
-                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}",
-                    reply_markup=markup
+                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
                 )
                 start_message_ids[chat_id].append(sent_photo.message_id)
         except FileNotFoundError:
             sent_text = bot.send_message(
                 chat_id,
-                f"It is a pleasure to meet you, {message.from_user.first_name}",
-                reply_markup=markup
+                f"It is a pleasure to meet you, {message.from_user.first_name}"
             )
             start_message_ids[chat_id].append(sent_text.message_id)
 
@@ -141,23 +130,30 @@ def start_command(message):
             "I can provide you with a price list for purchasing highly specialized databases.\n\n"
             "Commands:\n"
             "/start - restart\n"
+            "/introduction - information about the bot\n"
             "/help - help\n"
             "/site - visit website\n"
             "/database - available databases\n"
             "/contacts - my contacts\n"
             "/exchange - currency converter\n\n"
-            "CEO - @chistakovv",
-            reply_markup=markup
+            "CEO - @chistakovv"
         )
         start_message_ids[chat_id].append(sent_commands.message_id)
 
-@bot.message_handler(func=lambda message: message.text == 'Introduction')
-def introduction_handler(message):
+@bot.message_handler(commands=['introduction'])
+def introduction_command(message):
     chat_id = message.chat.id
     
     if chat_id not in first_start_done:
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
+    
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except:
+        pass
+    
+    delete_previous_message(chat_id)
     
     intro_text = """
 <b>🔐 ABOUT OUR SERVICE</b>
@@ -177,18 +173,20 @@ This service only provides access to databases from certain <b>EU countries</b>.
 
     try:
         with open("000.jpg", "rb") as photo:
-            bot.send_photo(
+            sent = bot.send_photo(
                 chat_id,
                 photo,
                 caption=intro_text,
                 parse_mode='HTML'
             )
+            last_message_id[chat_id] = sent.message_id
     except FileNotFoundError:
-        bot.send_message(
+        sent = bot.send_message(
             chat_id,
             intro_text,
             parse_mode='HTML'
         )
+        last_message_id[chat_id] = sent.message_id
 
 @bot.message_handler(commands=['database'])
 def database_command(message):
@@ -197,6 +195,13 @@ def database_command(message):
     if chat_id not in first_start_done:
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
+    
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except:
+        pass
+    
+    delete_previous_message(chat_id)
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton('Availability')
@@ -209,18 +214,20 @@ def database_command(message):
 
     try:
         with open("database.png", "rb") as photo:
-            bot.send_photo(
+            sent = bot.send_photo(
                 chat_id,
                 photo,
                 caption=definition_text,
                 reply_markup=markup
             )
+            last_message_id[chat_id] = sent.message_id
     except FileNotFoundError:
-        bot.send_message(
+        sent = bot.send_message(
             chat_id,
             definition_text,
             reply_markup=markup
         )
+        last_message_id[chat_id] = sent.message_id
 
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def handle_availability(message):
@@ -231,19 +238,28 @@ def handle_availability(message):
         return
     
     try:
+        bot.delete_message(chat_id, message.message_id)
+    except:
+        pass
+    
+    delete_previous_message(chat_id)
+    
+    try:
         with open("data.jpg", "rb") as photo:
-            bot.send_photo(
+            sent_photo = bot.send_photo(
                 chat_id,
                 photo,
                 caption="📋 <b>Available Databases</b>",
                 parse_mode='HTML'
             )
+            last_message_id[chat_id] = sent_photo.message_id
     except FileNotFoundError:
-        bot.send_message(
+        sent_text = bot.send_message(
             chat_id,
             "📋 <b>Available Databases</b>",
             parse_mode='HTML'
         )
+        last_message_id[chat_id] = sent_text.message_id
     
     databases_text = """<b>───── 🇷🇺 RUSSIA ─────</b>
     
@@ -297,11 +313,12 @@ def handle_availability(message):
 • SG [2006-2015]
 • ABW [2014-2017]"""
 
-    bot.send_message(
+    sent_list = bot.send_message(
         chat_id,
         databases_text,
         parse_mode='HTML'
     )
+    last_message_id[chat_id] = sent_list.message_id
 
 @bot.message_handler(commands=['help', 'site', 'website', 'contacts', 'exchange'])
 def other_commands(message):
@@ -656,7 +673,7 @@ def get_file(message):
 def info(message):
     chat_id = message.chat.id
     
-    if message.text.startswith('/') or message.text in ['Availability', 'Buy', 'Introduction', 'Back']:
+    if message.text.startswith('/') or message.text in ['Availability', 'Buy', 'Back']:
         return
         
     if message.text.lower() == 'hello':
