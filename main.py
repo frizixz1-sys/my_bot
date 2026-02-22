@@ -94,7 +94,7 @@ def start_command(message):
 
         sent_commands = bot.send_message(
             chat_id,
-            "I can provide you with a price list for purchasing highly specialized databases.\n\n"
+            "We can provide you with a price list for purchasing highly specialized databases.\n\n"
             "Commands:\n"
             "/start - restart\n"
             "/introduction - information about the bot\n"
@@ -726,4 +726,5 @@ if __name__ == '__main__':
     
     while True:
         time.sleep(60)
+
 
