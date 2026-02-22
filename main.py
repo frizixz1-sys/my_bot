@@ -5,28 +5,22 @@ import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telebot import types
 
-# ===== CONFIGURATION =====
 BOT_TOKEN = '8333223188:AAEBPgTSCYA8odgfCfoJEpx7xeSBV-X4uN4'
 API_KEY = '14a528b05de9f38b88ae0fe1'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Хранилище для отслеживания первого запуска и ID сообщений от /start
 first_start_done = {}
-start_message_ids = {}  # ID сообщений от /start, которые нельзя удалять
-last_message_id = {}     # ID последних сообщений для удаления
+start_message_ids = {}
+last_message_id = {}
 
-# ===== WEBHOOK HANDLER =====
 class WebhookHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             update = telebot.types.Update.de_json(post_data.decode('utf-8'))
-            
-            # Отправляем обновление боту
             bot.process_new_updates([update])
-            
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b'OK')
@@ -46,56 +40,50 @@ def run_webhook_server():
     print(f"🌐 Webhook server on port {port}")
     server.serve_forever()
 
-
-# ===== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ =====
 def delete_previous_message(chat_id):
     if chat_id in last_message_id:
         message_id = last_message_id[chat_id]
-        
-        # Проверяем, не является ли это сообщение от /start
         if chat_id in start_message_ids and message_id in start_message_ids[chat_id]:
             print(f"⏭️ Защищено от удаления (сообщение от /start): {message_id}")
             return
-        
         try:
             bot.delete_message(chat_id, message_id)
             print(f"✅ Удалено сообщение: {message_id}")
-            # Удаляем ID из хранилища после успешного удаления
             del last_message_id[chat_id]
         except Exception as e:
             print(f"❌ Не удалось удалить: {e}")
 
-
-# ===== ОБРАБОТЧИКИ КОМАНД =====
 @bot.message_handler(commands=['start'])
 def start_command(message):
     chat_id = message.chat.id
     
-    # Инициализируем хранилище для этого пользователя, если его нет
     if chat_id not in start_message_ids:
         start_message_ids[chat_id] = []
     
-    # Удаляем сообщение пользователя с командой /start
     try:
         bot.delete_message(chat_id, message.message_id)
     except:
         pass
     
-    # Проверяем, первый ли это запуск
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn1 = types.KeyboardButton('Availability')
+    btn2 = types.KeyboardButton('Buy')
+    btn3 = types.KeyboardButton('Introduction')
+    btn4 = types.KeyboardButton('Back')
+    markup.add(btn1, btn2, btn3, btn4)
+    
     if chat_id not in first_start_done:
         print(f"🚀 Первый запуск для пользователя {chat_id}")
         
-        # Отправляем фото
         try:
             with open("baba.jpg", "rb") as photo:
                 sent_photo = bot.send_photo(
                     chat_id,
                     photo,
-                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
+                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}",
+                    reply_markup=markup
                 )
-                # Сохраняем ID сообщения от /start
                 start_message_ids[chat_id].append(sent_photo.message_id)
-                # Закрепляем сообщение
                 try:
                     bot.pin_chat_message(chat_id, sent_photo.message_id)
                     print(f"✅ Сообщение закреплено: {sent_photo.message_id}")
@@ -104,7 +92,8 @@ def start_command(message):
         except FileNotFoundError:
             sent_text = bot.send_message(
                 chat_id,
-                f"It is a pleasure to meet you, {message.from_user.first_name}"
+                f"It is a pleasure to meet you, {message.from_user.first_name}",
+                reply_markup=markup
             )
             start_message_ids[chat_id].append(sent_text.message_id)
             try:
@@ -112,7 +101,6 @@ def start_command(message):
             except:
                 pass
 
-        # Отправляем список команд
         sent_commands = bot.send_message(
             chat_id,
             "I can provide you with a price list for purchasing highly specialized databases.\n\n"
@@ -123,34 +111,31 @@ def start_command(message):
             "/database - available databases\n"
             "/contacts - my contacts\n"
             "/exchange - currency converter\n\n"
-            "CEO - @chistakovv"
+            "CEO - @chistakovv",
+            reply_markup=markup
         )
-        # Сохраняем ID сообщения от /start
         start_message_ids[chat_id].append(sent_commands.message_id)
-        
-        # Сохраняем информацию о первом запуске
         first_start_done[chat_id] = True
     else:
         print(f"🔄 Повторный запуск для пользователя {chat_id}")
         
-        # Отправляем фото
         try:
             with open("baba.jpg", "rb") as photo:
                 sent_photo = bot.send_photo(
                     chat_id,
                     photo,
-                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}"
+                    caption=f"It is a pleasure to meet you, {message.from_user.first_name}",
+                    reply_markup=markup
                 )
-                # Сохраняем ID сообщения от /start
                 start_message_ids[chat_id].append(sent_photo.message_id)
         except FileNotFoundError:
             sent_text = bot.send_message(
                 chat_id,
-                f"It is a pleasure to meet you, {message.from_user.first_name}"
+                f"It is a pleasure to meet you, {message.from_user.first_name}",
+                reply_markup=markup
             )
             start_message_ids[chat_id].append(sent_text.message_id)
 
-        # Отправляем список команд
         sent_commands = bot.send_message(
             chat_id,
             "I can provide you with a price list for purchasing highly specialized databases.\n\n"
@@ -161,25 +146,58 @@ def start_command(message):
             "/database - available databases\n"
             "/contacts - my contacts\n"
             "/exchange - currency converter\n\n"
-            "CEO - @chistakovv"
+            "CEO - @chistakovv",
+            reply_markup=markup
         )
-        # Сохраняем ID сообщения от /start
         start_message_ids[chat_id].append(sent_commands.message_id)
 
+@bot.message_handler(func=lambda message: message.text == 'Introduction')
+def introduction_handler(message):
+    chat_id = message.chat.id
+    
+    if chat_id not in first_start_done:
+        bot.send_message(chat_id, "Please use /start first to initialize the bot.")
+        return
+    
+    intro_text = """
+<b>🔐 ABOUT OUR SERVICE</b>
+
+The bot actively collaborates with many specialized anonymous database sources, which we are not allowed to disclose.
+
+This service only provides access to databases from certain <b>EU countries</b>. The active administrator (CEO) is <b>@Chistakovv</b>; the others maintain complete anonymity.
+
+<b>📌 AUTHORIZED RESOURCES:</b>
+━━━━━━━━━━━━━━━━━━━━━
+• <b>DARKNET.ARMY</b> — anonymous darknet resources
+• <b>QuickPorno.t.me</b> — specialized database access
+
+━━━━━━━━━━━━━━━━━━━━━
+<i>All data is provided for informational purposes only.</i>
+"""
+
+    try:
+        with open("000.jpg", "rb") as photo:
+            bot.send_photo(
+                chat_id,
+                photo,
+                caption=intro_text,
+                parse_mode='HTML'
+            )
+    except FileNotFoundError:
+        bot.send_message(
+            chat_id,
+            intro_text,
+            parse_mode='HTML'
+        )
 
 @bot.message_handler(commands=['database'])
 def database_command(message):
     chat_id = message.chat.id
     
-    # Проверяем, был ли уже первый запуск
     if chat_id not in first_start_done:
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
     
-    # НЕ удаляем сообщение пользователя с /database
-    # НЕ удаляем предыдущие сообщения бота
-    
-    # Создаем клавиатуру
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton('Availability')
     btn2 = types.KeyboardButton('Buy')
@@ -189,7 +207,6 @@ def database_command(message):
 
     definition_text = """A database is an organized electronic information storage system that allows for the convenient storage, structure, search, modification, and analysis of data. It is used to manage large volumes of information—from user and order lists to complex government and corporate systems."""
 
-    # Отправляем фото с определением и клавиатурой
     try:
         with open("database.png", "rb") as photo:
             bot.send_photo(
@@ -204,23 +221,15 @@ def database_command(message):
             definition_text,
             reply_markup=markup
         )
-    
-    # НЕ сохраняем ID для удаления
-
 
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def handle_availability(message):
     chat_id = message.chat.id
     
-    # Проверяем, был ли уже первый запуск
     if chat_id not in first_start_done:
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
     
-    # НЕ удаляем сообщение пользователя с кнопкой
-    # НЕ удаляем предыдущие сообщения бота
-    
-    # Отправляем фото с подписью
     try:
         with open("data.jpg", "rb") as photo:
             bot.send_photo(
@@ -236,7 +245,6 @@ def handle_availability(message):
             parse_mode='HTML'
         )
     
-    # Отправляем большой список
     databases_text = """<b>───── 🇷🇺 RUSSIA ─────</b>
     
 • FR [1995-2021]
@@ -294,31 +302,23 @@ def handle_availability(message):
         databases_text,
         parse_mode='HTML'
     )
-    
-    # НЕ сохраняем ID для удаления
 
-
-# ===== ВСЕ ОСТАЛЬНЫЕ КОМАНДЫ (БУДУТ УДАЛЯТЬСЯ) =====
 @bot.message_handler(commands=['help', 'site', 'website', 'contacts', 'exchange'])
 def other_commands(message):
     chat_id = message.chat.id
     
-    # Проверяем, был ли уже первый запуск
     if chat_id not in first_start_done:
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
     
-    # Удаляем сообщение пользователя
     try:
         bot.delete_message(chat_id, message.message_id)
         print(f"✅ Удалено сообщение пользователя: {message.message_id}")
     except:
         pass
     
-    # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
     delete_previous_message(chat_id)
     
-    # Обрабатываем команды
     if message.text == '/help':
         try:
             with open("jep.jpg", "rb") as photo:
@@ -388,24 +388,19 @@ def other_commands(message):
             last_message_id[chat_id] = sent.message_id
         bot.register_next_step_handler(message, process_amount)
 
-
-# ===== КНОПКА BUY (ТОЖЕ БУДЕТ УДАЛЯТЬСЯ) =====
 @bot.message_handler(func=lambda message: message.text == 'Buy')
 def buy_handler(message):
     chat_id = message.chat.id
     
-    # Проверяем, был ли уже первый запуск
     if chat_id not in first_start_done:
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
     
-    # Удаляем сообщение пользователя с кнопкой
     try:
         bot.delete_message(chat_id, message.message_id)
     except:
         pass
     
-    # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
     delete_previous_message(chat_id)
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -432,24 +427,19 @@ def buy_handler(message):
         )
         last_message_id[chat_id] = sent.message_id
 
-
-# ===== КНОПКА BACK (ТОЖЕ БУДЕТ УДАЛЯТЬСЯ) =====
 @bot.message_handler(func=lambda message: message.text == 'Back')
 def back_handler(message):
     chat_id = message.chat.id
     
-    # Проверяем, был ли уже первый запуск
     if chat_id not in first_start_done:
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
     
-    # Удаляем сообщение пользователя с кнопкой
     try:
         bot.delete_message(chat_id, message.message_id)
     except:
         pass
     
-    # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
     delete_previous_message(chat_id)
     
     hide_markup = types.ReplyKeyboardRemove()
@@ -461,8 +451,6 @@ def back_handler(message):
     last_message_id[chat_id] = sent.message_id
     start_command(message)
 
-
-# ===== КОНВЕРТЕР ВАЛЮТ =====
 amount = 0
 
 def process_amount(message):
@@ -470,19 +458,15 @@ def process_amount(message):
     chat_id = message.chat.id
     
     try:
-        # Пробуем преобразовать ввод в число
         amount = float(message.text.strip().replace(',', '.'))
         
-        # Удаляем сообщение пользователя с суммой
         try:
             bot.delete_message(chat_id, message.message_id)
         except:
             pass
         
-        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
         delete_previous_message(chat_id)
         
-        # Создаем клавиатуру с кнопками выбора валют
         markup = types.InlineKeyboardMarkup(row_width=2)
         btn1 = types.InlineKeyboardButton('USD/RUB', callback_data='usd/rub')
         btn2 = types.InlineKeyboardButton('RUB/USD', callback_data='rub/usd')
@@ -498,11 +482,9 @@ def process_amount(message):
         last_message_id[chat_id] = sent.message_id
         
     except ValueError:
-        # Если ввод не число
         error_msg = bot.send_message(chat_id, "❌ Please enter a valid number (e.g., 100 or 100.50)")
         last_message_id[chat_id] = error_msg.message_id
         bot.register_next_step_handler(message, process_amount)
-
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
@@ -520,10 +502,8 @@ def callback(call):
                 rate = data['conversion_rates'][values[1]]
                 result = amount * rate
                 
-                # Удаляем сообщение с кнопками (если это не от /start)
                 delete_previous_message(chat_id)
                 
-                # Создаем новые кнопки для продолжения
                 markup = types.InlineKeyboardMarkup(row_width=2)
                 btn1 = types.InlineKeyboardButton('USD/RUB', callback_data='usd/rub')
                 btn2 = types.InlineKeyboardButton('RUB/USD', callback_data='rub/usd')
@@ -540,7 +520,6 @@ def callback(call):
             else:
                 bot.send_message(chat_id, "❌ API Error")
         else:
-            # OTHER - пользователь вводит свою пару
             delete_previous_message(chat_id)
             sent = bot.send_message(
                 chat_id,
@@ -555,7 +534,6 @@ def callback(call):
         error_msg = bot.send_message(chat_id, f"❌ Error: {e}")
         last_message_id[chat_id] = error_msg.message_id
 
-
 def process_other_currency(message):
     global amount
     chat_id = message.chat.id
@@ -563,7 +541,6 @@ def process_other_currency(message):
     try:
         text = message.text.strip().upper()
         
-        # Удаляем сообщение пользователя
         try:
             bot.delete_message(chat_id, message.message_id)
         except:
@@ -590,10 +567,8 @@ def process_other_currency(message):
             rate = data['conversion_rates'][values[1]]
             result = amount * rate
             
-            # Удаляем предыдущее сообщение (если это не от /start)
             delete_previous_message(chat_id)
             
-            # Создаем новые кнопки
             markup = types.InlineKeyboardMarkup(row_width=2)
             btn1 = types.InlineKeyboardButton('USD/RUB', callback_data='usd/rub')
             btn2 = types.InlineKeyboardButton('RUB/USD', callback_data='rub/usd')
@@ -615,8 +590,6 @@ def process_other_currency(message):
         last_message_id[chat_id] = error_msg.message_id
         bot.register_next_step_handler(message, process_other_currency)
 
-
-# ===== INLINE MODE =====
 @bot.inline_handler(func=lambda query: True)
 def inline_query(query):
     try:
@@ -670,8 +643,6 @@ def inline_query(query):
     except Exception as e:
         print(f"❌ Inline error: {e}")
 
-
-# ===== CONTENT HANDLERS =====
 @bot.message_handler(content_types=['photo', 'video', 'document', 'audio', 'voice'])
 def get_file(message):
     markup = types.InlineKeyboardMarkup()
@@ -681,20 +652,16 @@ def get_file(message):
     ))
     bot.reply_to(message, 'The file has been successfully saved to the server...', reply_markup=markup)
 
-
 @bot.message_handler(content_types=['text'])
 def info(message):
     chat_id = message.chat.id
     
-    # Игнорируем команды и кнопки, которые уже обработаны
-    if message.text.startswith('/') or message.text in ['Availability', 'Buy', 'Back']:
+    if message.text.startswith('/') or message.text in ['Availability', 'Buy', 'Introduction', 'Back']:
         return
         
     if message.text.lower() == 'hello':
-        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
         delete_previous_message(chat_id)
         
-        # Удаляем сообщение пользователя
         try:
             bot.delete_message(chat_id, message.message_id)
         except:
@@ -703,10 +670,8 @@ def info(message):
         sent = bot.send_message(chat_id, f'Hello, {message.from_user.first_name}!')
         last_message_id[chat_id] = sent.message_id
     elif message.text.lower() == 'id':
-        # Удаляем предыдущее сообщение бота (кроме сообщений от /start)
         delete_previous_message(chat_id)
         
-        # Удаляем сообщение пользователя
         try:
             bot.delete_message(chat_id, message.message_id)
         except:
@@ -715,8 +680,6 @@ def info(message):
         sent = bot.send_message(chat_id, f'Your ID: {message.from_user.id}')
         last_message_id[chat_id] = sent.message_id
 
-
-# ===== START =====
 if __name__ == '__main__':
     import threading
     import time
@@ -724,12 +687,10 @@ if __name__ == '__main__':
     print("=" * 50)
     print("✅ Starting bot with webhook...")
     
-    # Запускаем веб-сервер в отдельном потоке
     server_thread = threading.Thread(target=run_webhook_server, daemon=True)
     server_thread.start()
     time.sleep(2)
     
-    # Получаем URL сервиса
     render_url = os.environ.get('RENDER_EXTERNAL_URL')
     if not render_url:
         render_url = f"https://{os.environ.get('RENDER_SERVICE_NAME', 'localhost')}.onrender.com"
@@ -737,7 +698,6 @@ if __name__ == '__main__':
     webhook_url = f"{render_url}/webhook"
     print(f"🔗 Setting webhook to: {webhook_url}")
     
-    # Устанавливаем вебхук
     bot.remove_webhook()
     time.sleep(1)
     bot.set_webhook(url=webhook_url)
@@ -746,7 +706,5 @@ if __name__ == '__main__':
     print(f"📱 Bot is running with webhook")
     print("=" * 50)
     
-    # Держим главный поток активным
     while True:
         time.sleep(60)
-
