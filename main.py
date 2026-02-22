@@ -148,11 +148,7 @@ def introduction_command(message):
         bot.send_message(chat_id, "Please use /start first to initialize the bot.")
         return
     
-    try:
-        bot.delete_message(chat_id, message.message_id)
-    except:
-        pass
-    
+    # Удаляем предыдущее сообщение бота (но не сообщение пользователя)
     delete_previous_message(chat_id)
     
     # Создаем кнопку для перехода в /database
@@ -164,7 +160,7 @@ def introduction_command(message):
     markup.add(btn)
     
     intro_text = """
-<b>ABOUT OUR SERVICE</b>
+<b> ABOUT OUR SERVICE</b>
 
 The bot actively collaborates with many specialized anonymous database sources, which we are not allowed to disclose.
 
@@ -173,13 +169,34 @@ This service only provides access to databases from certain <b>EU countries</b>.
 <b> AUTHORIZED RESOURCES:</b>
 ━━━━━━━━━━━━━━━━━━━
 
-• <b>DARKNET.ARMY</b> 
-• <b>QuickPorno.t.me</b> 
+• <b>DARKNET.ARMY</b>
+• <b>QuickPorno.t.me</b>
 
 ━━━━━━━━━━━━━━━━━━━
 
 <i>All data is provided for informational purposes only.</i>
 """
+
+    try:
+        with open("000.jpg", "rb") as photo:
+            sent = bot.send_photo(
+                chat_id,
+                photo,
+                caption=intro_text,
+                parse_mode='HTML',
+                reply_markup=markup
+            )
+            last_message_id[chat_id] = sent.message_id
+    except FileNotFoundError:
+        sent = bot.send_message(
+            chat_id,
+            intro_text,
+            parse_mode='HTML',
+            reply_markup=markup
+        )
+        last_message_id[chat_id] = sent.message_id
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     global amount
@@ -195,14 +212,14 @@ def callback(call):
         
         # Создаем фейковое сообщение для вызова database_command
         class FakeMessage:
-            def __init__(self, chat_id):
+            def __init__(self, chat_id, from_user):
                 self.chat = type('obj', (object,), {'id': chat_id})
                 self.chat.id = chat_id
+                self.from_user = from_user
                 self.message_id = 0
-                self.from_user = call.from_user
                 self.text = '/database'
         
-        fake_message = FakeMessage(chat_id)
+        fake_message = FakeMessage(chat_id, call.from_user)
         database_command(fake_message)
         bot.answer_callback_query(call.id)
         return
@@ -210,88 +227,46 @@ def callback(call):
     # Остальной код конвертера валют...
     try:
         if call.data != 'other':
-            # ... весь существующий код конвертера ...
-            pass
-        # ... остальной код ...
+            values = call.data.upper().split('/')
+            url = f"https://v6.exchangerate-api.com/v6/{API_KEY}/latest/{values[0]}"
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            
+            if data['result'] == 'success':
+                rate = data['conversion_rates'][values[1]]
+                result = amount * rate
+                
+                delete_previous_message(chat_id)
+                
+                markup = types.InlineKeyboardMarkup(row_width=2)
+                btn1 = types.InlineKeyboardButton('USD/RUB', callback_data='usd/rub')
+                btn2 = types.InlineKeyboardButton('RUB/USD', callback_data='rub/usd')
+                btn3 = types.InlineKeyboardButton('USD/GBP', callback_data='usd/gbp')
+                btn4 = types.InlineKeyboardButton('OTHER', callback_data='other')
+                markup.add(btn1, btn2, btn3, btn4)
+                
+                sent = bot.send_message(
+                    chat_id,
+                    f" {amount} {values[0]} = {round(result, 2)} {values[1]}\n\n Amount: {amount}\n\nSelect another currency pair:",
+                    reply_markup=markup
+                )
+                last_message_id[chat_id] = sent.message_id
+            else:
+                bot.send_message(chat_id, "❌ API Error")
+        else:
+            delete_previous_message(chat_id)
+            sent = bot.send_message(
+                chat_id,
+                "Enter currency pair (e.g., EUR/GBP, JPY/USD):"
+            )
+            last_message_id[chat_id] = sent.message_id
+            bot.register_next_step_handler(call.message, process_other_currency)
+            
+        bot.answer_callback_query(call.id)
     except Exception as e:
-        # ... обработка ошибок ...
-        pass
-    try:
-        with open("000.jpg", "rb") as photo:
-            sent = bot.send_photo(
-                chat_id,
-                photo,
-                caption=intro_text,
-                parse_mode='HTML',
-                reply_markup=markup  # Добавляем кнопку под фото
-            )
-            last_message_id[chat_id] = sent.message_id
-    except FileNotFoundError:
-        sent = bot.send_message(
-            chat_id,
-            intro_text,
-            parse_mode='HTML',
-            reply_markup=markup  # Добавляем кнопку под текст
-        )
-        last_message_id[chat_id] = sent.message_id
-
-    try:
-        with open("000.jpg", "rb") as photo:
-            sent = bot.send_photo(
-                chat_id,
-                photo,
-                caption=intro_text,
-                parse_mode='HTML'
-            )
-            last_message_id[chat_id] = sent.message_id
-    except FileNotFoundError:
-        sent = bot.send_message(
-            chat_id,
-            intro_text,
-            parse_mode='HTML'
-        )
-        last_message_id[chat_id] = sent.message_id
-
-@bot.message_handler(commands=['database'])
-def database_command(message):
-    chat_id = message.chat.id
-    
-    if chat_id not in first_start_done:
-        bot.send_message(chat_id, "Please use /start first to initialize the bot.")
-        return
-    
-    try:
-        bot.delete_message(chat_id, message.message_id)
-    except:
-        pass
-    
-    delete_previous_message(chat_id)
-    
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton('Availability')
-    btn2 = types.KeyboardButton('Buy')
-    btn3 = types.KeyboardButton('Back')
-    markup.add(btn1, btn2)
-    markup.add(btn3)
-
-    definition_text = """A database is an organized electronic information storage system that allows for the convenient storage, structure, search, modification, and analysis of data. It is used to manage large volumes of information—from user and order lists to complex government and corporate systems."""
-
-    try:
-        with open("database.png", "rb") as photo:
-            sent = bot.send_photo(
-                chat_id,
-                photo,
-                caption=definition_text,
-                reply_markup=markup
-            )
-            last_message_id[chat_id] = sent.message_id
-    except FileNotFoundError:
-        sent = bot.send_message(
-            chat_id,
-            definition_text,
-            reply_markup=markup
-        )
-        last_message_id[chat_id] = sent.message_id
+        bot.answer_callback_query(call.id)
+        error_msg = bot.send_message(chat_id, f"❌ Error: {e}")
+        last_message_id[chat_id] = error_msg.message_id
 
 @bot.message_handler(func=lambda message: message.text == 'Availability')
 def handle_availability(message):
@@ -789,6 +764,7 @@ if __name__ == '__main__':
     
     while True:
         time.sleep(60)
+
 
 
 
